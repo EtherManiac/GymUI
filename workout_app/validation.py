@@ -54,6 +54,14 @@ def validate_exercise_document(document: Any) -> list[str]:
         if not _is_non_empty_string(exercise.get("name")):
             errors.append(f"{location} needs a non-empty 'name'.")
 
+        muscles = exercise.get("muscles_targeted")
+        if (
+            not isinstance(muscles, list)
+            or not muscles
+            or any(not _is_non_empty_string(muscle) for muscle in muscles)
+        ):
+            errors.append(f"{location} must have a non-empty 'muscles_targeted' list.")
+
         tags = exercise.get("tags")
         if not isinstance(tags, list) or any(not _is_non_empty_string(tag) for tag in tags):
             errors.append(f"{location} must have a 'tags' list containing only non-empty strings.")
@@ -129,6 +137,16 @@ def validate_routine_document(document: Any, exercise_ids: set[str]) -> list[str
             priority = slot.get("priority")
             if not isinstance(priority, int) or isinstance(priority, bool) or priority < 1:
                 errors.append(f"{location} needs a positive integer 'priority'.")
+
+            required_muscles = slot.get("required_muscles")
+            if (
+                not isinstance(required_muscles, list)
+                or not required_muscles
+                or any(not _is_non_empty_string(muscle) for muscle in required_muscles)
+            ):
+                errors.append(
+                    f"{location} field 'required_muscles' must be a non-empty list."
+                )
 
             required_tags = slot.get("required_tags")
             if not isinstance(required_tags, list) or any(

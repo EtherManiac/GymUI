@@ -10,8 +10,9 @@ import streamlit as st
 
 from workout_app.storage import DataLoadError, save_data
 from workout_app.ui_helpers import (
+    all_muscles,
     all_tags,
-    exercises_matching_tags,
+    exercises_matching_filters,
     load_data_or_stop,
     render_data_portability,
     show_save_error,
@@ -103,6 +104,7 @@ if st.button("Delete routine", type="secondary"):
         st.rerun()
 
 available_tags = all_tags(exercise_document)
+available_muscles = all_muscles(exercise_document)
 exercise_name_by_id = {
     exercise["id"]: exercise["name"] for exercise in exercise_document["exercises"]
 }
@@ -115,22 +117,31 @@ def render_exercise_fields(
 ) -> dict[str, Any] | None:
     """Render one member of a single exercise or superset editor.
 
-    Each member owns its tags, alternatives, and prescription. Existing choices
-    remain visible if tags were changed so the UI can explain and repair a
+    Each member owns its filters, alternatives, and prescription. Existing choices
+    remain visible if filters were changed so the UI can explain and repair a
     mismatch rather than crashing during the rerun.
     """
 
     initial_slot = initial_slot or {}
     st.markdown(f"**Exercise {exercise_number}**")
+    required_muscles = st.multiselect(
+        "Muscles targeted",
+        options=available_muscles,
+        default=initial_slot.get("required_muscles", []),
+        key=f"{key_prefix}_muscles",
+        help="Required. The exercise and every alternative must target all selected muscles.",
+    )
     required_tags = st.multiselect(
-        "Required tags",
+        "Additional tags (optional)",
         options=available_tags,
         default=initial_slot.get("required_tags", []),
         key=f"{key_prefix}_tags",
-        help="The exercise and every alternative must match all selected tags.",
+        help="Optionally narrow the choices further using general exercise tags.",
     )
     matching_exercises = (
-        exercises_matching_tags(exercise_document, required_tags) if required_tags else []
+        exercises_matching_filters(exercise_document, required_muscles, required_tags)
+        if required_muscles
+        else []
     )
     matching_ids = [exercise["id"] for exercise in matching_exercises]
 
@@ -145,11 +156,11 @@ def render_exercise_fields(
         if exercise_id and exercise_id not in selectable_ids:
             selectable_ids.append(exercise_id)
 
-    if not required_tags:
-        st.info("Select at least one required tag.")
+    if not required_muscles:
+        st.info("Select at least one targeted muscle.")
         return None
     if not selectable_ids:
-        st.warning("No exercises match all selected tags.")
+        st.warning("No exercises match all selected muscle and tag filters.")
         return None
 
     initial_default = initial_slot.get("default_exercise_id")
@@ -190,6 +201,7 @@ def render_exercise_fields(
         key=f"{key_prefix}_weight",
     )
     return {
+        "required_muscles": required_muscles,
         "required_tags": required_tags,
         "default_exercise_id": default_exercise_id,
         "alternative_exercise_ids": alternative_exercise_ids,
@@ -206,13 +218,15 @@ def draft_errors(drafts: list[dict[str, Any] | None]) -> list[str]:
     errors: list[str] = []
     for index, draft in enumerate(drafts, start=1):
         if draft is None:
-            errors.append(f"Exercise {index} needs required tags and a matching default exercise.")
+            errors.append(
+                f"Exercise {index} needs a targeted muscle and a matching default exercise."
+            )
             continue
         if not all((draft["sets"], draft["reps"], draft["reference_weight"])):
             errors.append(f"Exercise {index} needs sets, reps, and a reference weight.")
         selected_ids = [draft["default_exercise_id"], *draft["alternative_exercise_ids"]]
         if any(exercise_id not in draft["matching_ids"] for exercise_id in selected_ids):
-            errors.append(f"Exercise {index}'s selections must match every required tag.")
+            errors.append(f"Exercise {index}'s selections must match all selected filters.")
     return errors
 
 
@@ -229,6 +243,7 @@ def slot_from_draft(
         "id": slot_id,
         "order": order,
         "priority": priority,
+        "required_muscles": draft["required_muscles"],
         "required_tags": draft["required_tags"],
         "default_exercise_id": draft["default_exercise_id"],
         "alternative_exercise_ids": draft["alternative_exercise_ids"],

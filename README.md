@@ -53,7 +53,8 @@ An exercise contains:
 
 - `id`: stable unique string used by routine references
 - `name`: display name
-- `tags`: one or more filterable labels
+- `muscles_targeted`: one or more required muscle-group labels
+- `tags`: optional additional labels such as movement type or equipment
 - `notes`: optional technique or setup note
 - `demo_url`: optional demonstration link
 
@@ -61,7 +62,7 @@ A routine contains a stable `id`, a `name`, and ordered `slots`. Each slot conta
 
 - Stable `id` and positive `order`
 - Positive integer `priority`, where 1 is highest and is kept longest
-- `required_tags`, using match-all filtering in the editor
+- Non-empty `required_muscles` and optional `required_tags`; both use match-all filtering
 - `default_exercise_id` and explicit `alternative_exercise_ids`
 - String values for `sets`, `reps`, and `reference_weight`
 - Optional `superset_group_id`; slots sharing an ID form one group

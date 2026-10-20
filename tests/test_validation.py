@@ -12,7 +12,14 @@ class ValidationTests(unittest.TestCase):
         self.exercises = {
             "schema_version": 1,
             "exercises": [
-                {"id": "ex-1", "name": "Row", "tags": ["Pull"], "notes": "", "demo_url": ""}
+                {
+                    "id": "ex-1",
+                    "name": "Row",
+                    "muscles_targeted": ["Back"],
+                    "tags": ["Pull"],
+                    "notes": "",
+                    "demo_url": "",
+                }
             ],
         }
         self.routines = {
@@ -26,6 +33,7 @@ class ValidationTests(unittest.TestCase):
                             "id": "slot-1",
                             "order": 1,
                             "priority": 1,
+                            "required_muscles": ["Back"],
                             "required_tags": ["Pull"],
                             "default_exercise_id": "ex-1",
                             "alternative_exercise_ids": [],
@@ -50,6 +58,16 @@ class ValidationTests(unittest.TestCase):
     def test_duplicate_exercise_id_fails(self) -> None:
         self.exercises["exercises"].append(dict(self.exercises["exercises"][0]))
         with self.assertRaisesRegex(DataValidationError, "duplicated"):
+            validate_all(self.exercises, self.routines)
+
+    def test_general_tags_may_be_empty(self) -> None:
+        self.exercises["exercises"][0]["tags"] = []
+        self.routines["routines"][0]["slots"][0]["required_tags"] = []
+        validate_all(self.exercises, self.routines)
+
+    def test_slot_requires_a_muscle(self) -> None:
+        self.routines["routines"][0]["slots"][0]["required_muscles"] = []
+        with self.assertRaisesRegex(DataValidationError, "required_muscles"):
             validate_all(self.exercises, self.routines)
 
     def test_superset_members_require_shared_priority(self) -> None:

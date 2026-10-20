@@ -11,7 +11,6 @@
           "priority": 1,
           "required_tags": [
             "Push",
-            "Chest",
             "Compound"
           ],
           "default_exercise_id": "ex-barbell-bench",
@@ -21,7 +20,10 @@
           "sets": "3",
           "reps": "6-8",
           "reference_weight": "135 lb",
-          "superset_group_id": null
+          "superset_group_id": null,
+          "required_muscles": [
+            "Chest"
+          ]
         },
         {
           "id": "slot-push-overhead",
@@ -29,7 +31,6 @@
           "priority": 2,
           "required_tags": [
             "Push",
-            "Shoulders",
             "Compound"
           ],
           "default_exercise_id": "ex-overhead-press",
@@ -37,7 +38,10 @@
           "sets": "3",
           "reps": "8-10",
           "reference_weight": "65 lb",
-          "superset_group_id": null
+          "superset_group_id": null,
+          "required_muscles": [
+            "Shoulders"
+          ]
         },
         {
           "id": "slot-push-lateral",
@@ -45,7 +49,6 @@
           "priority": 3,
           "required_tags": [
             "Push",
-            "Shoulders",
             "Isolation"
           ],
           "default_exercise_id": "ex-lateral-raise",
@@ -53,15 +56,17 @@
           "sets": "3",
           "reps": "12-15",
           "reference_weight": "15 lb each",
-          "superset_group_id": "superset-push-finish"
+          "superset_group_id": "superset-push-finish",
+          "required_muscles": [
+            "Shoulders"
+          ]
         },
         {
           "id": "slot-push-triceps",
           "order": 4,
           "priority": 3,
           "required_tags": [
-            "Push",
-            "Triceps"
+            "Push"
           ],
           "default_exercise_id": "ex-triceps-pushdown",
           "alternative_exercise_ids": [
@@ -70,7 +75,10 @@
           "sets": "3",
           "reps": "10-12",
           "reference_weight": "40 lb",
-          "superset_group_id": "superset-push-finish"
+          "superset_group_id": "superset-push-finish",
+          "required_muscles": [
+            "Triceps"
+          ]
         }
       ]
     },
@@ -84,7 +92,6 @@
           "priority": 1,
           "required_tags": [
             "Pull",
-            "Back",
             "Compound"
           ],
           "default_exercise_id": "ex-lat-pulldown",
@@ -94,7 +101,10 @@
           "sets": "3",
           "reps": "8-12",
           "reference_weight": "90 lb",
-          "superset_group_id": null
+          "superset_group_id": null,
+          "required_muscles": [
+            "Back"
+          ]
         },
         {
           "id": "slot-pull-row",
@@ -102,7 +112,6 @@
           "priority": 2,
           "required_tags": [
             "Pull",
-            "Back",
             "Compound"
           ],
           "default_exercise_id": "ex-cable-row",
@@ -110,7 +119,10 @@
           "sets": "3",
           "reps": "8-12",
           "reference_weight": "90 lb",
-          "superset_group_id": null
+          "superset_group_id": null,
+          "required_muscles": [
+            "Back"
+          ]
         },
         {
           "id": "slot-pull-face",
@@ -118,7 +130,6 @@
           "priority": 3,
           "required_tags": [
             "Pull",
-            "Rear delts",
             "Isolation"
           ],
           "default_exercise_id": "ex-face-pull",
@@ -126,7 +137,10 @@
           "sets": "3",
           "reps": "12-15",
           "reference_weight": "30 lb",
-          "superset_group_id": "superset-pull-finish"
+          "superset_group_id": "superset-pull-finish",
+          "required_muscles": [
+            "Rear delts"
+          ]
         },
         {
           "id": "slot-pull-curl",
@@ -134,7 +148,6 @@
           "priority": 3,
           "required_tags": [
             "Pull",
-            "Biceps",
             "Isolation"
           ],
           "default_exercise_id": "ex-dumbbell-curl",
@@ -144,7 +157,10 @@
           "sets": "3",
           "reps": "10-12",
           "reference_weight": "20 lb each",
-          "superset_group_id": "superset-pull-finish"
+          "superset_group_id": "superset-pull-finish",
+          "required_muscles": [
+            "Biceps"
+          ]
         }
       ]
     },
@@ -158,7 +174,221 @@
           "priority": 1,
           "required_tags": [
             "Legs",
-            "Quads",
+            "Compound"
+          ],
+          "default_exercise_id": "ex-back-squat",
+          "alternative_exercise_ids": [
+            "ex-leg-press"
+          ],
+          "sets": "3",
+          "reps": "6-10",
+          "reference_weight": "135 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Quads"
+          ]
+        },
+        {
+          "id": "slot-legs-hinge",
+          "order": 2,
+          "priority": 2,
+          "required_tags": [
+            "Legs"
+          ],
+          "default_exercise_id": "ex-romanian-deadlift",
+          "alternative_exercise_ids": [
+            "ex-leg-curl"
+          ],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "95 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Hamstrings"
+          ]
+        },
+        {
+          "id": "e423d3f4-428c-4028-b278-6345d8bd48c5",
+          "order": 3,
+          "priority": 3,
+          "required_tags": [],
+          "default_exercise_id": "ex-barbell-bench",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "a12f9a81-258a-4004-8e88-40e053fd8637",
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "70c504b5-e203-4c8b-bb15-f4f305087e51",
+          "order": 4,
+          "priority": 3,
+          "required_tags": [
+            "Compound"
+          ],
+          "default_exercise_id": "ex-dumbbell-bench",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "a12f9a81-258a-4004-8e88-40e053fd8637",
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "slot-legs-calf-standing",
+          "order": 5,
+          "priority": 4,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "ex-calf-raise",
+          "alternative_exercise_ids": [
+            "ex-seated-calf-raise"
+          ],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "superset-legs-finish",
+          "required_muscles": [
+            "Calves"
+          ]
+        },
+        {
+          "id": "slot-legs-curl",
+          "order": 6,
+          "priority": 4,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "ex-leg-curl",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "10-15",
+          "reference_weight": "50 lb",
+          "superset_group_id": "superset-legs-finish",
+          "required_muscles": [
+            "Hamstrings"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "575c879f-4707-4f57-b902-f3eb9d4fea23",
+      "name": "pull",
+      "slots": [
+        {
+          "id": "5102dd0f-6d77-4c7d-9844-12f7bdf4d1e6",
+          "order": 1,
+          "priority": 1,
+          "required_tags": [],
+          "default_exercise_id": "ex-dumbbell-curl",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "aefd422c-856c-430d-9fd0-4b06e3fa0feb",
+          "required_muscles": [
+            "Biceps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "routine-ui-demo",
+      "name": "UI Demo",
+      "slots": [
+        {
+          "id": "demo-superset-lateral",
+          "order": 1,
+          "priority": 1,
+          "required_tags": [
+            "Push",
+            "Isolation"
+          ],
+          "default_exercise_id": "ex-lateral-raise",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "15 lb each",
+          "superset_group_id": "demo-superset",
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "demo-superset-triceps",
+          "order": 2,
+          "priority": 1,
+          "required_tags": [
+            "Push",
+            "Isolation"
+          ],
+          "default_exercise_id": "ex-triceps-pushdown",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "10-12",
+          "reference_weight": "40 lb",
+          "superset_group_id": "demo-superset",
+          "required_muscles": [
+            "Triceps"
+          ]
+        },
+        {
+          "id": "demo-single-bench",
+          "order": 3,
+          "priority": 2,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "ex-barbell-bench",
+          "alternative_exercise_ids": [
+            "ex-dumbbell-bench"
+          ],
+          "sets": "3",
+          "reps": "6-8",
+          "reference_weight": "135 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "demo-single-pulldown",
+          "order": 4,
+          "priority": 3,
+          "required_tags": [
+            "Pull",
+            "Compound"
+          ],
+          "default_exercise_id": "ex-lat-pulldown",
+          "alternative_exercise_ids": [
+            "ex-assisted-pullup"
+          ],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "90 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Back"
+          ]
+        },
+        {
+          "id": "demo-single-squat",
+          "order": 5,
+          "priority": 4,
+          "required_muscles": [
+            "Quads"
+          ],
+          "required_tags": [
+            "Legs",
             "Compound"
           ],
           "default_exercise_id": "ex-back-squat",
@@ -171,58 +401,49 @@
           "superset_group_id": null
         },
         {
-          "id": "slot-legs-hinge",
-          "order": 2,
-          "priority": 2,
+          "id": "demo-triset-face-pull",
+          "order": 6,
+          "priority": 5,
           "required_tags": [
-            "Legs",
-            "Hamstrings"
+            "Pull",
+            "Isolation"
           ],
-          "default_exercise_id": "ex-romanian-deadlift",
+          "default_exercise_id": "ex-face-pull",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "30 lb",
+          "superset_group_id": "demo-triset",
+          "required_muscles": [
+            "Rear delts"
+          ]
+        },
+        {
+          "id": "demo-triset-curl",
+          "order": 7,
+          "priority": 5,
+          "required_tags": [
+            "Pull",
+            "Isolation"
+          ],
+          "default_exercise_id": "ex-dumbbell-curl",
           "alternative_exercise_ids": [
-            "ex-leg-curl"
+            "ex-hammer-curl"
           ],
           "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "95 lb",
-          "superset_group_id": null
+          "reps": "10-12",
+          "reference_weight": "20 lb each",
+          "superset_group_id": "demo-triset",
+          "required_muscles": [
+            "Biceps"
+          ]
         },
         {
-          "id": "e423d3f4-428c-4028-b278-6345d8bd48c5",
-          "order": 3,
-          "priority": 3,
-          "required_tags": [
-            "Chest"
-          ],
-          "default_exercise_id": "ex-barbell-bench",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "Bodyweight",
-          "superset_group_id": "a12f9a81-258a-4004-8e88-40e053fd8637"
-        },
-        {
-          "id": "70c504b5-e203-4c8b-bb15-f4f305087e51",
-          "order": 4,
-          "priority": 3,
-          "required_tags": [
-            "Chest",
-            "Compound"
-          ],
-          "default_exercise_id": "ex-dumbbell-bench",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "Bodyweight",
-          "superset_group_id": "a12f9a81-258a-4004-8e88-40e053fd8637"
-        },
-        {
-          "id": "slot-legs-calf-standing",
-          "order": 5,
-          "priority": 4,
+          "id": "demo-triset-calf",
+          "order": 8,
+          "priority": 5,
           "required_tags": [
             "Legs",
-            "Calves",
             "Isolation"
           ],
           "default_exercise_id": "ex-calf-raise",
@@ -232,15 +453,53 @@
           "sets": "3",
           "reps": "12-15",
           "reference_weight": "Bodyweight",
-          "superset_group_id": "superset-legs-finish"
+          "superset_group_id": "demo-triset",
+          "required_muscles": [
+            "Calves"
+          ]
         },
         {
-          "id": "slot-legs-curl",
-          "order": 6,
-          "priority": 4,
+          "id": "demo-circuit-press",
+          "order": 9,
+          "priority": 6,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "ex-overhead-press",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-10",
+          "reference_weight": "65 lb",
+          "superset_group_id": "demo-circuit",
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "demo-circuit-row",
+          "order": 10,
+          "priority": 6,
+          "required_tags": [
+            "Pull",
+            "Compound"
+          ],
+          "default_exercise_id": "ex-cable-row",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "90 lb",
+          "superset_group_id": "demo-circuit",
+          "required_muscles": [
+            "Back"
+          ]
+        },
+        {
+          "id": "demo-circuit-leg-curl",
+          "order": 11,
+          "priority": 6,
           "required_tags": [
             "Legs",
-            "Hamstrings",
             "Isolation"
           ],
           "default_exercise_id": "ex-leg-curl",
@@ -248,177 +507,28 @@
           "sets": "3",
           "reps": "10-15",
           "reference_weight": "50 lb",
-          "superset_group_id": "superset-legs-finish"
-        }
-      ]
-    },
-    {
-      "id": "575c879f-4707-4f57-b902-f3eb9d4fea23",
-      "name": "pull",
-      "slots": [
-        {
-          "id": "5102dd0f-6d77-4c7d-9844-12f7bdf4d1e6",
-          "order": 1,
-          "priority": 1,
-          "required_tags": [
-            "Biceps"
-          ],
-          "default_exercise_id": "ex-dumbbell-curl",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "Bodyweight",
-          "superset_group_id": "aefd422c-856c-430d-9fd0-4b06e3fa0feb"
-        }
-      ]
-    },
-    {
-      "id": "routine-ui-demo",
-      "name": "UI Demo",
-      "slots": [
-        {
-          "id": "demo-superset-lateral",
-          "order": 1,
-          "priority": 1,
-          "required_tags": ["Push", "Shoulders", "Isolation"],
-          "default_exercise_id": "ex-lateral-raise",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "12-15",
-          "reference_weight": "15 lb each",
-          "superset_group_id": "demo-superset"
-        },
-        {
-          "id": "demo-superset-triceps",
-          "order": 2,
-          "priority": 1,
-          "required_tags": ["Push", "Triceps", "Isolation"],
-          "default_exercise_id": "ex-triceps-pushdown",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "10-12",
-          "reference_weight": "40 lb",
-          "superset_group_id": "demo-superset"
-        },
-        {
-          "id": "demo-single-bench",
-          "order": 3,
-          "priority": 2,
-          "required_tags": ["Push", "Chest", "Compound"],
-          "default_exercise_id": "ex-barbell-bench",
-          "alternative_exercise_ids": ["ex-dumbbell-bench"],
-          "sets": "3",
-          "reps": "6-8",
-          "reference_weight": "135 lb",
-          "superset_group_id": null
-        },
-        {
-          "id": "demo-single-pulldown",
-          "order": 4,
-          "priority": 3,
-          "required_tags": ["Pull", "Back", "Compound"],
-          "default_exercise_id": "ex-lat-pulldown",
-          "alternative_exercise_ids": ["ex-assisted-pullup"],
-          "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "90 lb",
-          "superset_group_id": null
-        },
-        {
-          "id": "demo-single-squat",
-          "order": 5,
-          "priority": 4,
-          "required_tags": ["Legs", "Quads", "Compound"],
-          "default_exercise_id": "ex-back-squat",
-          "alternative_exercise_ids": ["ex-leg-press"],
-          "sets": "3",
-          "reps": "6-10",
-          "reference_weight": "135 lb",
-          "superset_group_id": null
-        },
-        {
-          "id": "demo-triset-face-pull",
-          "order": 6,
-          "priority": 5,
-          "required_tags": ["Pull", "Rear delts", "Isolation"],
-          "default_exercise_id": "ex-face-pull",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "12-15",
-          "reference_weight": "30 lb",
-          "superset_group_id": "demo-triset"
-        },
-        {
-          "id": "demo-triset-curl",
-          "order": 7,
-          "priority": 5,
-          "required_tags": ["Pull", "Biceps", "Isolation"],
-          "default_exercise_id": "ex-dumbbell-curl",
-          "alternative_exercise_ids": ["ex-hammer-curl"],
-          "sets": "3",
-          "reps": "10-12",
-          "reference_weight": "20 lb each",
-          "superset_group_id": "demo-triset"
-        },
-        {
-          "id": "demo-triset-calf",
-          "order": 8,
-          "priority": 5,
-          "required_tags": ["Legs", "Calves", "Isolation"],
-          "default_exercise_id": "ex-calf-raise",
-          "alternative_exercise_ids": ["ex-seated-calf-raise"],
-          "sets": "3",
-          "reps": "12-15",
-          "reference_weight": "Bodyweight",
-          "superset_group_id": "demo-triset"
-        },
-        {
-          "id": "demo-circuit-press",
-          "order": 9,
-          "priority": 6,
-          "required_tags": ["Push", "Shoulders", "Compound"],
-          "default_exercise_id": "ex-overhead-press",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "8-10",
-          "reference_weight": "65 lb",
-          "superset_group_id": "demo-circuit"
-        },
-        {
-          "id": "demo-circuit-row",
-          "order": 10,
-          "priority": 6,
-          "required_tags": ["Pull", "Back", "Compound"],
-          "default_exercise_id": "ex-cable-row",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "8-12",
-          "reference_weight": "90 lb",
-          "superset_group_id": "demo-circuit"
-        },
-        {
-          "id": "demo-circuit-leg-curl",
-          "order": 11,
-          "priority": 6,
-          "required_tags": ["Legs", "Hamstrings", "Isolation"],
-          "default_exercise_id": "ex-leg-curl",
-          "alternative_exercise_ids": [],
-          "sets": "3",
-          "reps": "10-15",
-          "reference_weight": "50 lb",
-          "superset_group_id": "demo-circuit"
+          "superset_group_id": "demo-circuit",
+          "required_muscles": [
+            "Hamstrings"
+          ]
         },
         {
           "id": "demo-circuit-dip",
           "order": 12,
           "priority": 6,
-          "required_tags": ["Push", "Triceps", "Compound"],
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
           "default_exercise_id": "ex-assisted-dip",
           "alternative_exercise_ids": [],
           "sets": "3",
           "reps": "8-12",
           "reference_weight": "Assisted",
-          "superset_group_id": "demo-circuit"
+          "superset_group_id": "demo-circuit",
+          "required_muscles": [
+            "Triceps"
+          ]
         }
       ]
     }

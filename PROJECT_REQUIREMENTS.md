@@ -31,7 +31,7 @@ PAGE 1: WORKOUT (DEFAULT PAGE)
 PAGE 2: EDIT EXERCISES
 - View the master exercise library.
 - Create, edit, and delete exercises.
-- Store: stable unique exercise ID, name, tags (multiple), optional notes, and optional demonstration URL.
+- Store: stable unique exercise ID, name, muscles targeted (one or more), optional tags, optional notes, and optional demonstration URL.
 - Allow tags to be added or edited easily.
 - Prevent or clearly handle deleting an exercise referenced by a routine.
 - The supplied exercise-editor mockup includes sets/reps and weight, but these should be configured in routine slots instead of in the master exercise library.
@@ -39,9 +39,9 @@ PAGE 2: EDIT EXERCISES
 PAGE 3: EDIT ROUTINES
 - Create, rename, edit, and delete routines.
 - Add, remove, and reorder exercise slots.
-- Each slot has a stable unique ID, order, required tags, default exercise ID, alternative exercise IDs, sets, reps, reference weight, and optional superset group ID.
-- Slot workflow: add a slot; choose required tags; filter library exercises; select a default exercise and optional alternatives; enter sets/reps/weight; optionally group it into a superset; save.
-- Most slots will have only one required tag. For multiple tags, a simple match-all filter is sufficient.
+- Each slot has a stable unique ID, order, required muscles, optional tags, default exercise ID, alternative exercise IDs, sets, reps, reference weight, and optional superset group ID.
+- Slot workflow: add a slot; choose at least one required muscle and any optional tags; filter library exercises; select a default exercise and optional alternatives; enter sets/reps/weight; optionally group it into a superset; save.
+- Muscle and optional tag filters use simple match-all behavior.
 - Do not add elaborate tag rules or automatic exercise recommendations.
 
 3. DATA MODEL

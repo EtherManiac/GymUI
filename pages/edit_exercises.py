@@ -29,6 +29,7 @@ st.dataframe(
     [
         {
             "Exercise": exercise["name"],
+            "Muscles targeted": ", ".join(exercise["muscles_targeted"]),
             "Tags": ", ".join(exercise["tags"]),
             "Notes": exercise.get("notes", ""),
             "Demo": exercise.get("demo_url", ""),
@@ -64,10 +65,15 @@ selected = exercise_by_id.get(selected_id, {})
 # and every exercise field behaves consistently in both modes.
 with st.form(f"exercise_details_{selected_id}", clear_on_submit=is_new_exercise):
     edited_name = st.text_input("Name", value=selected.get("name", ""))
+    edited_muscles = st.text_input(
+        "Muscles targeted",
+        value=", ".join(selected.get("muscles_targeted", [])),
+        help="Required. Separate multiple muscle groups with commas.",
+    )
     edited_tags = st.text_input(
-        "Tags",
+        "Tags (optional)",
         value=", ".join(selected.get("tags", [])),
-        help="Separate multiple tags with commas.",
+        help="Use these for additional labels such as Push, Compound, or equipment.",
     )
     edited_notes = st.text_area("Notes (optional)", value=selected.get("notes", ""))
     edited_demo_url = st.text_input(
@@ -78,9 +84,10 @@ with st.form(f"exercise_details_{selected_id}", clear_on_submit=is_new_exercise)
     )
 
 if save_submitted:
+    muscles_targeted = normalized_tags(edited_muscles)
     tags = normalized_tags(edited_tags)
-    if not edited_name.strip() or not tags:
-        st.error("Enter an exercise name and at least one tag.")
+    if not edited_name.strip() or not muscles_targeted:
+        st.error("Enter an exercise name and at least one targeted muscle.")
     else:
         updated_exercises = deepcopy(exercise_document)
         if is_new_exercise:
@@ -89,6 +96,7 @@ if save_submitted:
                 {
                     "id": saved_exercise_id,
                     "name": edited_name.strip(),
+                    "muscles_targeted": muscles_targeted,
                     "tags": tags,
                     "notes": edited_notes.strip(),
                     "demo_url": edited_demo_url.strip(),
@@ -103,6 +111,7 @@ if save_submitted:
             )
             target.update(
                 name=edited_name.strip(),
+                muscles_targeted=muscles_targeted,
                 tags=tags,
                 notes=edited_notes.strip(),
                 demo_url=edited_demo_url.strip(),

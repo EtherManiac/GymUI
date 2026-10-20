@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import streamlit as st
@@ -257,3 +258,9 @@ completed_count = sum(row["completed"] for row in snapshot)
 if move_completed_units_to_end(snapshot):
     st.rerun()
 st.progress(completed_count / len(snapshot), text=f"{completed_count} of {len(snapshot)} complete")
+
+# A compact motivational footer, kept below the workout controls and progress.
+st.write("")
+_, motivation_column, _ = st.columns([1, 2, 1])
+with motivation_column:
+    st.image(Path(__file__).resolve().parent.parent / "Arnold.webp", width="stretch")

@@ -13,6 +13,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from workout_app.migrations import migrate_documents
 from workout_app.validation import DataValidationError, validate_all
 
 
@@ -51,6 +52,9 @@ def load_data() -> tuple[dict[str, Any], dict[str, Any]]:
 
     exercise_document = _read_json(EXERCISES_PATH)
     routine_document = _read_json(ROUTINES_PATH)
+    exercise_document, routine_document = migrate_documents(
+        exercise_document, routine_document
+    )
     validate_all(exercise_document, routine_document)
     return exercise_document, routine_document
 
@@ -110,6 +114,10 @@ def parse_data_bundle(raw_data: bytes) -> tuple[dict[str, Any], dict[str, Any]]:
         raise DataValidationError(["The uploaded file is not a version 1 workout-data backup."])
     exercise_document = bundle.get("exercises")
     routine_document = bundle.get("routines")
+    if isinstance(exercise_document, dict) and isinstance(routine_document, dict):
+        exercise_document, routine_document = migrate_documents(
+            exercise_document, routine_document
+        )
     validate_all(exercise_document, routine_document)
     return exercise_document, routine_document
 
@@ -125,4 +133,3 @@ def exercise_reference_locations(routine_document: dict[str, Any], exercise_id: 
             if exercise_id in slot["alternative_exercise_ids"]:
                 references.append(f"{routine['name']} (alternative, slot {slot['order']})")
     return references
-

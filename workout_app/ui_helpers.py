@@ -95,14 +95,33 @@ def all_tags(exercise_document: dict[str, Any]) -> list[str]:
     )
 
 
-def exercises_matching_tags(
-    exercise_document: dict[str, Any], required_tags: list[str]
-) -> list[dict[str, Any]]:
-    """Filter exercises with simple match-all tag semantics."""
+def all_muscles(exercise_document: dict[str, Any]) -> list[str]:
+    """Return every targeted muscle in a friendly sorted order."""
 
-    required = {tag.casefold() for tag in required_tags}
+    return sorted(
+        {
+            muscle
+            for exercise in exercise_document["exercises"]
+            for muscle in exercise["muscles_targeted"]
+        },
+        key=str.casefold,
+    )
+
+
+def exercises_matching_filters(
+    exercise_document: dict[str, Any],
+    required_muscles: list[str],
+    required_tags: list[str],
+) -> list[dict[str, Any]]:
+    """Filter exercises using match-all semantics for muscles and tags."""
+
+    muscles = {muscle.casefold() for muscle in required_muscles}
+    tags = {tag.casefold() for tag in required_tags}
     return [
         exercise
         for exercise in exercise_document["exercises"]
-        if required.issubset({tag.casefold() for tag in exercise["tags"]})
+        if muscles.issubset(
+            {muscle.casefold() for muscle in exercise["muscles_targeted"]}
+        )
+        and tags.issubset({tag.casefold() for tag in exercise["tags"]})
     ]
