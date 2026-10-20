@@ -4,129 +4,200 @@
     {
       "id": "ex-barbell-bench",
       "name": "Barbell Bench Press",
-      "tags": ["Push", "Chest", "Compound"],
+      "tags": [
+        "Push",
+        "Chest",
+        "Compound"
+      ],
       "notes": "Keep shoulder blades retracted and use a controlled descent.",
       "demo_url": "https://exrx.net/WeightExercises/PectoralSternal/BBBenchPress"
     },
     {
       "id": "ex-dumbbell-bench",
       "name": "Dumbbell Bench Press",
-      "tags": ["Push", "Chest", "Compound"],
+      "tags": [
+        "Push",
+        "Chest",
+        "Compound"
+      ],
       "notes": "Use a neutral grip if that feels better on the shoulders.",
       "demo_url": ""
     },
     {
       "id": "ex-overhead-press",
       "name": "Standing Overhead Press",
-      "tags": ["Push", "Shoulders", "Compound"],
+      "tags": [
+        "Push",
+        "Shoulders",
+        "Compound"
+      ],
       "notes": "Brace before each rep and avoid leaning back.",
       "demo_url": ""
     },
     {
       "id": "ex-lateral-raise",
       "name": "Dumbbell Lateral Raise",
-      "tags": ["Push", "Shoulders", "Isolation"],
+      "tags": [
+        "Push",
+        "Shoulders",
+        "Isolation"
+      ],
       "notes": "Lead with the elbows and stop near shoulder height.",
       "demo_url": ""
     },
     {
       "id": "ex-triceps-pushdown",
       "name": "Cable Triceps Pushdown",
-      "tags": ["Push", "Triceps", "Isolation"],
+      "tags": [
+        "Push",
+        "Triceps",
+        "Isolation"
+      ],
       "notes": "Keep the upper arms still throughout the movement.",
       "demo_url": ""
     },
     {
       "id": "ex-assisted-dip",
       "name": "Assisted Dip",
-      "tags": ["Push", "Triceps", "Compound"],
+      "tags": [
+        "Push",
+        "Triceps",
+        "Compound"
+      ],
       "notes": "Choose assistance that allows smooth, controlled repetitions.",
       "demo_url": ""
     },
     {
       "id": "ex-lat-pulldown",
       "name": "Lat Pulldown",
-      "tags": ["Pull", "Back", "Compound"],
+      "tags": [
+        "Pull",
+        "Back",
+        "Compound"
+      ],
       "notes": "Pull the elbows toward the ribs without swinging.",
       "demo_url": ""
     },
     {
       "id": "ex-assisted-pullup",
       "name": "Assisted Pull-up",
-      "tags": ["Pull", "Back", "Compound"],
+      "tags": [
+        "Pull",
+        "Back",
+        "Compound"
+      ],
       "notes": "Begin each rep from a controlled hang.",
       "demo_url": ""
     },
     {
       "id": "ex-cable-row",
       "name": "Seated Cable Row",
-      "tags": ["Pull", "Back", "Compound"],
+      "tags": [
+        "Pull",
+        "Back",
+        "Compound"
+      ],
       "notes": "Keep the torso quiet and finish with the elbows behind you.",
       "demo_url": ""
     },
     {
       "id": "ex-face-pull",
       "name": "Cable Face Pull",
-      "tags": ["Pull", "Rear delts", "Isolation"],
+      "tags": [
+        "Pull",
+        "Rear delts",
+        "Isolation"
+      ],
       "notes": "Pull toward eye level and rotate the hands apart.",
       "demo_url": ""
     },
     {
       "id": "ex-dumbbell-curl",
       "name": "Dumbbell Curl",
-      "tags": ["Pull", "Biceps", "Isolation"],
+      "tags": [
+        "Pull",
+        "Biceps",
+        "Isolation"
+      ],
       "notes": "Avoid using momentum from the hips.",
       "demo_url": ""
     },
     {
       "id": "ex-hammer-curl",
       "name": "Hammer Curl",
-      "tags": ["Pull", "Biceps", "Isolation"],
+      "tags": [
+        "Pull",
+        "Biceps",
+        "Isolation"
+      ],
       "notes": "Keep a neutral grip and control the lowering phase.",
       "demo_url": ""
     },
     {
       "id": "ex-back-squat",
       "name": "Barbell Back Squat",
-      "tags": ["Legs", "Quads", "Compound"],
+      "tags": [
+        "Legs",
+        "Quads",
+        "Compound"
+      ],
       "notes": "Brace firmly and use the depth you can control.",
       "demo_url": ""
     },
     {
       "id": "ex-leg-press",
       "name": "Leg Press",
-      "tags": ["Legs", "Quads", "Compound"],
+      "tags": [
+        "Legs",
+        "Quads",
+        "Compound"
+      ],
       "notes": "Keep the hips against the pad and avoid locking the knees.",
       "demo_url": ""
     },
     {
       "id": "ex-romanian-deadlift",
       "name": "Romanian Deadlift",
-      "tags": ["Legs", "Hamstrings", "Compound"],
+      "tags": [
+        "Legs",
+        "Hamstrings",
+        "Compound"
+      ],
       "notes": "Push the hips back while keeping the weight close to the legs.",
       "demo_url": ""
     },
     {
       "id": "ex-leg-curl",
       "name": "Seated Leg Curl",
-      "tags": ["Legs", "Hamstrings", "Isolation"],
+      "tags": [
+        "Legs",
+        "Hamstrings",
+        "Isolation"
+      ],
       "notes": "Pause briefly in the contracted position.",
       "demo_url": ""
     },
     {
       "id": "ex-calf-raise",
       "name": "Standing Calf Raise",
-      "tags": ["Legs", "Calves", "Isolation"],
+      "tags": [
+        "Legs",
+        "Calves",
+        "Isolation"
+      ],
       "notes": "Use a full stretch and pause at the top.",
       "demo_url": ""
     },
     {
       "id": "ex-seated-calf-raise",
       "name": "Seated Calf Raise",
-      "tags": ["Legs", "Calves", "Isolation"],
+      "tags": [
+        "Legs",
+        "Calves",
+        "Isolation"
+      ],
       "notes": "Avoid bouncing at the bottom of each rep.",
       "demo_url": ""
     }
   ]
 }
-

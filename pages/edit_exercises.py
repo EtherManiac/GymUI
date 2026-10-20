@@ -39,61 +39,67 @@ st.dataframe(
     hide_index=True,
 )
 
-with st.expander("Add an exercise", expanded=not exercises):
-    with st.form("add_exercise_form", clear_on_submit=True):
-        new_name = st.text_input("Name")
-        new_tags = st.text_input("Tags", help="Separate multiple tags with commas.")
-        new_notes = st.text_area("Notes (optional)")
-        new_demo_url = st.text_input("Demonstration URL (optional)")
-        add_submitted = st.form_submit_button("Add exercise", type="primary")
-    if add_submitted:
-        tags = normalized_tags(new_tags)
-        if not new_name.strip() or not tags:
-            st.error("Enter an exercise name and at least one tag.")
-        else:
-            updated_exercises = deepcopy(exercise_document)
+st.subheader("Exercise details")
+exercise_by_id = {exercise["id"]: exercise for exercise in exercises}
+new_exercise_option = "__new_exercise__"
+
+# After creating or deleting an item, select the most useful next option on the
+# following rerun. The assignment must happen before the selectbox is created.
+pending_selection = st.session_state.pop("exercise_editor_pending_selection", None)
+if pending_selection is not None:
+    st.session_state.exercise_editor_selection = pending_selection
+
+selected_id = st.selectbox(
+    "Exercise",
+    options=[new_exercise_option, *exercise_by_id],
+    format_func=lambda exercise_id: (
+        "New exercise" if exercise_id == new_exercise_option else exercise_by_id[exercise_id]["name"]
+    ),
+    key="exercise_editor_selection",
+)
+is_new_exercise = selected_id == new_exercise_option
+selected = exercise_by_id.get(selected_id, {})
+
+# Creation and editing intentionally share one form so the page stays compact
+# and every exercise field behaves consistently in both modes.
+with st.form(f"exercise_details_{selected_id}", clear_on_submit=is_new_exercise):
+    edited_name = st.text_input("Name", value=selected.get("name", ""))
+    edited_tags = st.text_input(
+        "Tags",
+        value=", ".join(selected.get("tags", [])),
+        help="Separate multiple tags with commas.",
+    )
+    edited_notes = st.text_area("Notes (optional)", value=selected.get("notes", ""))
+    edited_demo_url = st.text_input(
+        "Demonstration URL (optional)", value=selected.get("demo_url", "")
+    )
+    save_submitted = st.form_submit_button(
+        "Add exercise" if is_new_exercise else "Save changes", type="primary"
+    )
+
+if save_submitted:
+    tags = normalized_tags(edited_tags)
+    if not edited_name.strip() or not tags:
+        st.error("Enter an exercise name and at least one tag.")
+    else:
+        updated_exercises = deepcopy(exercise_document)
+        if is_new_exercise:
+            saved_exercise_id = str(uuid4())
             updated_exercises["exercises"].append(
                 {
-                    "id": str(uuid4()),
-                    "name": new_name.strip(),
+                    "id": saved_exercise_id,
+                    "name": edited_name.strip(),
                     "tags": tags,
-                    "notes": new_notes.strip(),
-                    "demo_url": new_demo_url.strip(),
+                    "notes": edited_notes.strip(),
+                    "demo_url": edited_demo_url.strip(),
                 }
             )
-            try:
-                save_data(updated_exercises, routine_document)
-            except (DataLoadError, DataValidationError) as error:
-                show_save_error(error)
-            else:
-                st.success("Exercise added.")
-                st.rerun()
-
-if exercises:
-    st.subheader("Update an exercise")
-    exercise_by_id = {exercise["id"]: exercise for exercise in exercises}
-    selected_id = st.selectbox(
-        "Exercise to edit",
-        options=list(exercise_by_id),
-        format_func=lambda exercise_id: exercise_by_id[exercise_id]["name"],
-    )
-    selected = exercise_by_id[selected_id]
-    with st.form(f"edit_exercise_{selected_id}"):
-        edited_name = st.text_input("Name", value=selected["name"])
-        edited_tags = st.text_input("Tags", value=", ".join(selected["tags"]))
-        edited_notes = st.text_area("Notes (optional)", value=selected.get("notes", ""))
-        edited_demo_url = st.text_input(
-            "Demonstration URL (optional)", value=selected.get("demo_url", "")
-        )
-        save_submitted = st.form_submit_button("Save changes", type="primary")
-    if save_submitted:
-        tags = normalized_tags(edited_tags)
-        if not edited_name.strip() or not tags:
-            st.error("Enter an exercise name and at least one tag.")
         else:
-            updated_exercises = deepcopy(exercise_document)
+            saved_exercise_id = selected_id
             target = next(
-                exercise for exercise in updated_exercises["exercises"] if exercise["id"] == selected_id
+                exercise
+                for exercise in updated_exercises["exercises"]
+                if exercise["id"] == selected_id
             )
             target.update(
                 name=edited_name.strip(),
@@ -101,14 +107,15 @@ if exercises:
                 notes=edited_notes.strip(),
                 demo_url=edited_demo_url.strip(),
             )
-            try:
-                save_data(updated_exercises, routine_document)
-            except (DataLoadError, DataValidationError) as error:
-                show_save_error(error)
-            else:
-                st.success("Exercise updated.")
-                st.rerun()
+        try:
+            save_data(updated_exercises, routine_document)
+        except (DataLoadError, DataValidationError) as error:
+            show_save_error(error)
+        else:
+            st.session_state.exercise_editor_pending_selection = saved_exercise_id
+            st.rerun()
 
+if not is_new_exercise:
     references = exercise_reference_locations(routine_document, selected_id)
     with st.expander("Delete this exercise"):
         if references:
@@ -125,5 +132,5 @@ if exercises:
             except (DataLoadError, DataValidationError) as error:
                 show_save_error(error)
             else:
-                st.success("Exercise deleted.")
+                st.session_state.exercise_editor_pending_selection = new_exercise_option
                 st.rerun()

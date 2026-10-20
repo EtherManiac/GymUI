@@ -36,52 +36,68 @@ def persist(updated_routines: dict) -> bool:
     return True
 
 
-with st.expander("Create a routine", expanded=not routine_document["routines"]):
-    with st.form("create_routine_form", clear_on_submit=True):
-        new_routine_name = st.text_input("Routine name")
-        create_submitted = st.form_submit_button("Create routine", type="primary")
-    if create_submitted:
-        if not new_routine_name.strip():
-            st.error("Enter a routine name.")
-        else:
-            updated = deepcopy(routine_document)
-            updated["routines"].append(
-                {"id": str(uuid4()), "name": new_routine_name.strip(), "slots": []}
-            )
-            if persist(updated):
-                st.success("Routine created.")
-                st.rerun()
-
 routines = sorted(routine_document["routines"], key=lambda routine: routine["name"].casefold())
-if not routines:
-    st.stop()
-
 routine_by_id = {routine["id"]: routine for routine in routines}
+new_routine_option = "__new_routine__"
+
+# Apply post-save selection before constructing the widget. This lets a newly
+# created routine open immediately without mutating an instantiated selectbox.
+pending_selection = st.session_state.pop("routine_editor_pending_selection", None)
+if pending_selection is not None:
+    st.session_state.routine_editor_selection = pending_selection
+
+st.subheader("Routine details")
 selected_routine_id = st.selectbox(
     "Routine",
-    options=list(routine_by_id),
-    format_func=lambda routine_id: routine_by_id[routine_id]["name"],
+    options=[new_routine_option, *routine_by_id],
+    format_func=lambda routine_id: (
+        "New routine" if routine_id == new_routine_option else routine_by_id[routine_id]["name"]
+    ),
+    key="routine_editor_selection",
 )
-selected_routine = routine_by_id[selected_routine_id]
+is_new_routine = selected_routine_id == new_routine_option
+selected_routine = routine_by_id.get(selected_routine_id)
 
-management_columns = st.columns([3, 1])
-renamed_routine = management_columns[0].text_input(
-    "Routine name", value=selected_routine["name"], key=f"routine_name_{selected_routine_id}"
-)
-if management_columns[0].button("Rename", disabled=not renamed_routine.strip()):
-    updated = deepcopy(routine_document)
-    target = next(routine for routine in updated["routines"] if routine["id"] == selected_routine_id)
-    target["name"] = renamed_routine.strip()
-    if persist(updated):
-        st.success("Routine renamed.")
-        st.rerun()
-if management_columns[1].button("Delete routine", type="secondary"):
+# The same small form creates a routine or renames the selected routine.
+with st.form(f"routine_details_{selected_routine_id}", clear_on_submit=is_new_routine):
+    routine_name = st.text_input(
+        "Routine name", value="" if is_new_routine else selected_routine["name"]
+    )
+    routine_details_submitted = st.form_submit_button(
+        "Create routine" if is_new_routine else "Save name", type="primary"
+    )
+
+if routine_details_submitted:
+    if not routine_name.strip():
+        st.error("Enter a routine name.")
+    else:
+        updated = deepcopy(routine_document)
+        if is_new_routine:
+            saved_routine_id = str(uuid4())
+            updated["routines"].append(
+                {"id": saved_routine_id, "name": routine_name.strip(), "slots": []}
+            )
+        else:
+            saved_routine_id = selected_routine_id
+            target = next(
+                routine for routine in updated["routines"] if routine["id"] == selected_routine_id
+            )
+            target["name"] = routine_name.strip()
+        if persist(updated):
+            st.session_state.routine_editor_pending_selection = saved_routine_id
+            st.rerun()
+
+if is_new_routine:
+    st.info("Create the routine to begin adding exercise slots.")
+    st.stop()
+
+if st.button("Delete routine", type="secondary"):
     updated = deepcopy(routine_document)
     updated["routines"] = [
         routine for routine in updated["routines"] if routine["id"] != selected_routine_id
     ]
     if persist(updated):
-        st.success("Routine deleted.")
+        st.session_state.routine_editor_pending_selection = new_routine_option
         st.rerun()
 
 available_tags = all_tags(exercise_document)
