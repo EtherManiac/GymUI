@@ -35,20 +35,48 @@ def group_slots(slots: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
 
 
 def select_slots(routine: dict[str, Any], requested_count: int) -> list[dict[str, Any]]:
-    """Select slots predictably without splitting supersets.
+    """Fill the requested count when possible without splitting grouped sets.
 
-    Units are considered in routine order. A unit that would exceed the target
-    is skipped, allowing a later smaller unit to fill the remaining space.
-    Consequently, very small targets may omit a large superset entirely.
+    Exercise count is the primary goal and priority is the tie-breaker. A small
+    dynamic program evaluates whole singles/groups and retains the lexicographically
+    best priority choices for every reachable count. This can temporarily omit a
+    higher-priority unit when a different combination exactly fills the request.
+    Chosen slots are always returned in routine order.
     """
 
-    selected: list[dict[str, Any]] = []
-    for unit in group_slots(ordered_slots(routine)):
-        if len(selected) + len(unit) <= requested_count:
-            selected.extend(unit)
-        if len(selected) == requested_count:
-            break
-    return selected
+    units = group_slots(ordered_slots(routine))
+    ranked_units = sorted(
+        units,
+        key=lambda unit: (unit[0]["priority"], unit[0]["order"]),
+    )
+
+    # Each state stores selected units plus a boolean priority signature. When
+    # two combinations reach the same count, normal tuple comparison prefers
+    # the one containing the earliest (highest-priority) ranked unit.
+    states: dict[int, tuple[list[list[dict[str, Any]]], tuple[bool, ...]]] = {
+        0: ([], ())
+    }
+    for unit in ranked_units:
+        next_states: dict[int, tuple[list[list[dict[str, Any]]], tuple[bool, ...]]] = {}
+        for exercise_count, (selected_units, signature) in states.items():
+            candidates = [
+                (exercise_count, selected_units, signature + (False,)),
+            ]
+            included_count = exercise_count + len(unit)
+            if included_count <= requested_count:
+                candidates.append(
+                    (included_count, [*selected_units, unit], signature + (True,))
+                )
+
+            for candidate_count, candidate_units, candidate_signature in candidates:
+                existing = next_states.get(candidate_count)
+                if existing is None or candidate_signature > existing[1]:
+                    next_states[candidate_count] = (candidate_units, candidate_signature)
+        states = next_states
+
+    best_count = max(states)
+    selected = [slot for unit in states[best_count][0] for slot in unit]
+    return sorted(selected, key=lambda slot: slot["order"])
 
 
 def new_workout_snapshot(routine: dict[str, Any], requested_count: int) -> list[dict[str, Any]]:
@@ -59,8 +87,11 @@ def new_workout_snapshot(routine: dict[str, Any], requested_count: int) -> list[
             "slot": slot,
             "selected_exercise_id": slot["default_exercise_id"],
             "completed": False,
+            # Base position tracks the active original/shuffled order separately
+            # from the temporary completed-at-bottom display order.
+            "base_position": position,
         }
-        for slot in select_slots(routine, requested_count)
+        for position, slot in enumerate(select_slots(routine, requested_count))
     ]
 
 
@@ -71,6 +102,8 @@ def shuffle_snapshot(snapshot: list[dict[str, Any]], randomizer: random.Random |
     units = group_slots_by_snapshot(snapshot)
     randomizer.shuffle(units)
     snapshot[:] = [row for unit in units for row in unit]
+    for position, row in enumerate(snapshot):
+        row["base_position"] = position
 
 
 def group_slots_by_snapshot(snapshot: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
@@ -94,4 +127,28 @@ def restore_snapshot_order(snapshot: list[dict[str, Any]]) -> None:
     """Restore routine order while retaining completion and substitutions."""
 
     snapshot.sort(key=lambda row: row["slot"]["order"])
+    for position, row in enumerate(snapshot):
+        row["base_position"] = position
 
+
+def move_completed_units_to_end(snapshot: list[dict[str, Any]]) -> bool:
+    """Move fully completed singles/supersets below incomplete workout units.
+
+    A partially completed superset remains in its base position. Rebuilding from
+    base positions on every call also means unchecking a row restores its proper
+    original or shuffled location. The return value tells the UI whether it
+    needs a rerun to display the new order.
+    """
+
+    # Sessions created before this feature may survive a Streamlit hot reload.
+    # Seed their base positions from the currently visible order once.
+    for position, row in enumerate(snapshot):
+        row.setdefault("base_position", position)
+
+    current_ids = [row["slot"]["id"] for row in snapshot]
+    base_order = sorted(snapshot, key=lambda row: row["base_position"])
+    units = group_slots_by_snapshot(base_order)
+    incomplete_units = [unit for unit in units if not all(row["completed"] for row in unit)]
+    completed_units = [unit for unit in units if all(row["completed"] for row in unit)]
+    snapshot[:] = [row for unit in [*incomplete_units, *completed_units] for row in unit]
+    return current_ids != [row["slot"]["id"] for row in snapshot]

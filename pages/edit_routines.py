@@ -1,8 +1,9 @@
-"""Routine and ordered slot maintenance page."""
+"""Routine and grouped exercise-slot maintenance page."""
 
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 from uuid import uuid4
 
 import streamlit as st
@@ -16,16 +17,17 @@ from workout_app.ui_helpers import (
     show_save_error,
 )
 from workout_app.validation import DataValidationError
+from workout_app.workout_logic import group_slots, ordered_slots
 
 
 exercise_document, routine_document = load_data_or_stop()
 render_data_portability(exercise_document, routine_document)
 
 st.title("Edit routines")
-st.caption("Routine slots own their sets, reps, reference weight, alternatives, and superset grouping.")
+st.caption("Add a single exercise or build and edit a complete superset in one place.")
 
 
-def persist(updated_routines: dict) -> bool:
+def persist(updated_routines: dict[str, Any]) -> bool:
     """Save routine edits and show consistent feedback to the user."""
 
     try:
@@ -88,7 +90,7 @@ if routine_details_submitted:
             st.rerun()
 
 if is_new_routine:
-    st.info("Create the routine to begin adding exercise slots.")
+    st.info("Create the routine to begin adding exercises or supersets.")
     st.stop()
 
 if st.button("Delete routine", type="secondary"):
@@ -104,206 +106,375 @@ available_tags = all_tags(exercise_document)
 exercise_name_by_id = {
     exercise["id"]: exercise["name"] for exercise in exercise_document["exercises"]
 }
-existing_group_ids = sorted(
-    {
-        slot["superset_group_id"]
-        for slot in selected_routine["slots"]
-        if slot.get("superset_group_id")
-    }
-)
 
-st.subheader("Add a slot")
-with st.container(border=True):
-    add_tags = st.multiselect(
+
+def render_exercise_fields(
+    key_prefix: str,
+    exercise_number: int,
+    initial_slot: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Render one member of a single exercise or superset editor.
+
+    Each member owns its tags, alternatives, and prescription. Existing choices
+    remain visible if tags were changed so the UI can explain and repair a
+    mismatch rather than crashing during the rerun.
+    """
+
+    initial_slot = initial_slot or {}
+    st.markdown(f"**Exercise {exercise_number}**")
+    required_tags = st.multiselect(
         "Required tags",
         options=available_tags,
-        key=f"add_tags_{selected_routine_id}",
-        help="Exercises must match every selected tag.",
+        default=initial_slot.get("required_tags", []),
+        key=f"{key_prefix}_tags",
+        help="The exercise and every alternative must match all selected tags.",
     )
-    add_matches = exercises_matching_tags(exercise_document, add_tags) if add_tags else []
-    add_match_ids = [exercise["id"] for exercise in add_matches]
-    if not add_tags:
-        st.info("Select at least one required tag to choose an exercise.")
-    elif not add_match_ids:
+    matching_exercises = (
+        exercises_matching_tags(exercise_document, required_tags) if required_tags else []
+    )
+    matching_ids = [exercise["id"] for exercise in matching_exercises]
+
+    # Keep saved selections in the control even when a tag edit temporarily
+    # makes them invalid. Saving remains blocked until the mismatch is repaired.
+    selectable_ids = list(matching_ids)
+    existing_ids = [
+        initial_slot.get("default_exercise_id"),
+        *initial_slot.get("alternative_exercise_ids", []),
+    ]
+    for exercise_id in existing_ids:
+        if exercise_id and exercise_id not in selectable_ids:
+            selectable_ids.append(exercise_id)
+
+    if not required_tags:
+        st.info("Select at least one required tag.")
+        return None
+    if not selectable_ids:
         st.warning("No exercises match all selected tags.")
-    else:
-        add_default_id = st.selectbox(
-            "Default exercise",
-            options=add_match_ids,
-            format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
-            key=f"add_default_{selected_routine_id}",
-        )
-        add_alternatives = st.multiselect(
-            "Alternatives (optional)",
-            options=[exercise_id for exercise_id in add_match_ids if exercise_id != add_default_id],
-            format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
-            key=f"add_alternatives_{selected_routine_id}",
-        )
-        add_detail_columns = st.columns(3)
-        add_sets = add_detail_columns[0].text_input("Sets", value="3")
-        add_reps = add_detail_columns[1].text_input("Reps", value="8-12")
-        add_weight = add_detail_columns[2].text_input("Reference weight", value="Bodyweight")
-        group_options = ["None", "New superset", *existing_group_ids]
-        add_group_choice = st.selectbox("Superset group (optional)", group_options)
-        if st.button("Add slot", type="primary"):
-            if not all(value.strip() for value in (add_sets, add_reps, add_weight)):
-                st.error("Sets, reps, and reference weight are required.")
-            else:
-                group_id = None
-                if add_group_choice == "New superset":
-                    group_id = str(uuid4())
-                elif add_group_choice != "None":
-                    group_id = add_group_choice
-                updated = deepcopy(routine_document)
-                target = next(
-                    routine for routine in updated["routines"] if routine["id"] == selected_routine_id
-                )
-                target["slots"].append(
-                    {
-                        "id": str(uuid4()),
-                        "order": len(target["slots"]) + 1,
-                        "required_tags": add_tags,
-                        "default_exercise_id": add_default_id,
-                        "alternative_exercise_ids": add_alternatives,
-                        "sets": add_sets.strip(),
-                        "reps": add_reps.strip(),
-                        "reference_weight": add_weight.strip(),
-                        "superset_group_id": group_id,
-                    }
-                )
-                if persist(updated):
-                    st.success("Slot added.")
-                    st.rerun()
+        return None
 
-st.subheader("Routine slots")
-ordered = sorted(selected_routine["slots"], key=lambda slot: slot["order"])
-if not ordered:
-    st.info("This routine does not have any slots yet.")
+    initial_default = initial_slot.get("default_exercise_id")
+    default_index = selectable_ids.index(initial_default) if initial_default in selectable_ids else 0
+    default_exercise_id = st.selectbox(
+        "Default exercise",
+        options=selectable_ids,
+        index=default_index,
+        format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
+        key=f"{key_prefix}_default",
+    )
+    alternative_options = [
+        exercise_id for exercise_id in selectable_ids if exercise_id != default_exercise_id
+    ]
+    initial_alternatives = [
+        exercise_id
+        for exercise_id in initial_slot.get("alternative_exercise_ids", [])
+        if exercise_id in alternative_options
+    ]
+    alternative_exercise_ids = st.multiselect(
+        "Alternatives (optional)",
+        options=alternative_options,
+        default=initial_alternatives,
+        format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
+        key=f"{key_prefix}_alternatives",
+    )
 
-for position, slot in enumerate(ordered):
-    default_name = exercise_name_by_id[slot["default_exercise_id"]]
-    with st.expander(f"{position + 1}. {default_name}", expanded=False):
+    detail_columns = st.columns(3)
+    sets = detail_columns[0].text_input(
+        "Sets", value=initial_slot.get("sets", "3"), key=f"{key_prefix}_sets"
+    )
+    reps = detail_columns[1].text_input(
+        "Reps", value=initial_slot.get("reps", "8-12"), key=f"{key_prefix}_reps"
+    )
+    reference_weight = detail_columns[2].text_input(
+        "Reference weight",
+        value=initial_slot.get("reference_weight", "Bodyweight"),
+        key=f"{key_prefix}_weight",
+    )
+    return {
+        "required_tags": required_tags,
+        "default_exercise_id": default_exercise_id,
+        "alternative_exercise_ids": alternative_exercise_ids,
+        "sets": sets.strip(),
+        "reps": reps.strip(),
+        "reference_weight": reference_weight.strip(),
+        "matching_ids": matching_ids,
+    }
+
+
+def draft_errors(drafts: list[dict[str, Any] | None]) -> list[str]:
+    """Return concise errors for a group of exercise editor drafts."""
+
+    errors: list[str] = []
+    for index, draft in enumerate(drafts, start=1):
+        if draft is None:
+            errors.append(f"Exercise {index} needs required tags and a matching default exercise.")
+            continue
+        if not all((draft["sets"], draft["reps"], draft["reference_weight"])):
+            errors.append(f"Exercise {index} needs sets, reps, and a reference weight.")
+        selected_ids = [draft["default_exercise_id"], *draft["alternative_exercise_ids"]]
+        if any(exercise_id not in draft["matching_ids"] for exercise_id in selected_ids):
+            errors.append(f"Exercise {index}'s selections must match every required tag.")
+    return errors
+
+
+def slot_from_draft(
+    draft: dict[str, Any],
+    slot_id: str,
+    order: int,
+    priority: int,
+    group_id: str | None,
+) -> dict[str, Any]:
+    """Convert UI-only draft data into the documented persistent slot shape."""
+
+    return {
+        "id": slot_id,
+        "order": order,
+        "priority": priority,
+        "required_tags": draft["required_tags"],
+        "default_exercise_id": draft["default_exercise_id"],
+        "alternative_exercise_ids": draft["alternative_exercise_ids"],
+        "sets": draft["sets"],
+        "reps": draft["reps"],
+        "reference_weight": draft["reference_weight"],
+        "superset_group_id": group_id,
+    }
+
+
+def target_routine(document: dict[str, Any]) -> dict[str, Any]:
+    """Find the currently selected routine inside a copied document."""
+
+    return next(
+        routine for routine in document["routines"] if routine["id"] == selected_routine_id
+    )
+
+
+st.subheader("Add an exercise or superset")
+with st.container(border=True):
+    add_as_superset = st.toggle(
+        "Make this a superset", key=f"add_superset_{selected_routine_id}"
+    )
+    add_count = 1
+    if add_as_superset:
+        add_count = int(
+            st.number_input(
+                "Number of exercises in the superset",
+                min_value=2,
+                max_value=6,
+                value=2,
+                step=1,
+                key=f"add_count_{selected_routine_id}",
+            )
+        )
+
+    # New items default below current priorities, but priority is deliberately
+    # independent from the item's position at the end of the routine.
+    suggested_priority = max(
+        (slot["priority"] for slot in selected_routine["slots"]), default=0
+    ) + 1
+    add_priority = int(
+        st.number_input(
+            "Priority",
+            min_value=1,
+            max_value=99,
+            value=min(suggested_priority, 99),
+            step=1,
+            key=f"add_priority_{selected_routine_id}",
+            help="1 is highest priority and is kept longest when shortening a workout.",
+        )
+    )
+
+    add_drafts: list[dict[str, Any] | None] = []
+    for member_index in range(add_count):
+        with st.container(border=add_as_superset):
+            add_drafts.append(
+                render_exercise_fields(
+                    f"add_{selected_routine_id}_{member_index}", member_index + 1
+                )
+            )
+
+    if st.button(
+        "Add superset" if add_as_superset else "Add exercise",
+        type="primary",
+        key=f"add_item_{selected_routine_id}",
+    ):
+        errors = draft_errors(add_drafts)
+        if errors:
+            for error in errors:
+                st.error(error)
+        else:
+            updated = deepcopy(routine_document)
+            routine = target_routine(updated)
+            next_order = len(routine["slots"]) + 1
+            group_id = str(uuid4()) if add_as_superset else None
+            for member_index, draft in enumerate(add_drafts):
+                routine["slots"].append(
+                    slot_from_draft(
+                        draft,
+                        slot_id=str(uuid4()),
+                        order=next_order + member_index,
+                        priority=add_priority,
+                        group_id=group_id,
+                    )
+                )
+            if persist(updated):
+                st.rerun()
+
+
+st.subheader("Routine exercises")
+routine_blocks = group_slots(ordered_slots(selected_routine))
+if not routine_blocks:
+    st.info("This routine does not have any exercises yet.")
+
+for block_index, block in enumerate(routine_blocks):
+    block_names = " + ".join(exercise_name_by_id[slot["default_exercise_id"]] for slot in block)
+    block_title = f"Superset · {block_names}" if len(block) > 1 else block_names
+    block_title = f"{block_title} | Priority {block[0]['priority']}"
+    anchor_id = block[0]["id"]
+
+    with st.expander(f"{block_index + 1}. {block_title}", expanded=False):
         move_columns = st.columns(2)
         if move_columns[0].button(
-            "Move up", key=f"up_{slot['id']}", disabled=position == 0, width="stretch"
-        ):
-            updated = deepcopy(routine_document)
-            target = next(
-                routine for routine in updated["routines"] if routine["id"] == selected_routine_id
-            )
-            target_slots = sorted(target["slots"], key=lambda item: item["order"])
-            target_slots[position - 1], target_slots[position] = target_slots[position], target_slots[position - 1]
-            for order, target_slot in enumerate(target_slots, start=1):
-                target_slot["order"] = order
-            if persist(updated):
-                st.rerun()
-        if move_columns[1].button(
-            "Move down",
-            key=f"down_{slot['id']}",
-            disabled=position == len(ordered) - 1,
+            "Move up",
+            key=f"up_block_{anchor_id}",
+            disabled=block_index == 0,
             width="stretch",
         ):
-            updated = deepcopy(routine_document)
-            target = next(
-                routine for routine in updated["routines"] if routine["id"] == selected_routine_id
+            reordered_blocks = deepcopy(routine_blocks)
+            reordered_blocks[block_index - 1], reordered_blocks[block_index] = (
+                reordered_blocks[block_index],
+                reordered_blocks[block_index - 1],
             )
-            target_slots = sorted(target["slots"], key=lambda item: item["order"])
-            target_slots[position], target_slots[position + 1] = target_slots[position + 1], target_slots[position]
-            for order, target_slot in enumerate(target_slots, start=1):
-                target_slot["order"] = order
+            flattened = [slot for routine_block in reordered_blocks for slot in routine_block]
+            for order, slot in enumerate(flattened, start=1):
+                slot["order"] = order
+            updated = deepcopy(routine_document)
+            target_routine(updated)["slots"] = flattened
             if persist(updated):
                 st.rerun()
 
-        edited_tags = st.multiselect(
-            "Required tags",
-            options=available_tags,
-            default=slot["required_tags"],
-            key=f"tags_{slot['id']}",
-        )
-        matches = exercises_matching_tags(exercise_document, edited_tags) if edited_tags else []
-        match_ids = [exercise["id"] for exercise in matches]
-        # Retain current choices long enough for the user to repair a tag mismatch.
-        for current_id in [slot["default_exercise_id"], *slot["alternative_exercise_ids"]]:
-            if current_id not in match_ids:
-                match_ids.append(current_id)
-        edited_default = st.selectbox(
-            "Default exercise",
-            options=match_ids,
-            index=match_ids.index(slot["default_exercise_id"]),
-            format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
-            key=f"default_{slot['id']}",
-        )
-        edited_alternatives = st.multiselect(
-            "Alternatives",
-            options=[exercise_id for exercise_id in match_ids if exercise_id != edited_default],
-            default=[
-                exercise_id
-                for exercise_id in slot["alternative_exercise_ids"]
-                if exercise_id != edited_default
-            ],
-            format_func=lambda exercise_id: exercise_name_by_id[exercise_id],
-            key=f"alternatives_{slot['id']}",
-        )
-        detail_columns = st.columns(3)
-        edited_sets = detail_columns[0].text_input("Sets", value=slot["sets"], key=f"sets_{slot['id']}")
-        edited_reps = detail_columns[1].text_input("Reps", value=slot["reps"], key=f"reps_{slot['id']}")
-        edited_weight = detail_columns[2].text_input(
-            "Reference weight", value=slot["reference_weight"], key=f"weight_{slot['id']}"
-        )
-        edit_group_options = ["None", "New superset", *existing_group_ids]
-        current_group = slot.get("superset_group_id") or "None"
-        edited_group_choice = st.selectbox(
-            "Superset group",
-            options=edit_group_options,
-            index=edit_group_options.index(current_group),
-            key=f"group_{slot['id']}",
-        )
-        action_columns = st.columns(2)
-        if action_columns[0].button("Save slot", key=f"save_{slot['id']}", type="primary"):
-            if not edited_tags:
-                st.error("Select at least one required tag.")
-            elif edited_default not in [exercise["id"] for exercise in matches] or any(
-                exercise_id not in [exercise["id"] for exercise in matches]
-                for exercise_id in edited_alternatives
-            ):
-                st.error("The default and alternatives must match every required tag.")
-            elif not all(value.strip() for value in (edited_sets, edited_reps, edited_weight)):
-                st.error("Sets, reps, and reference weight are required.")
-            else:
-                group_id = None
-                if edited_group_choice == "New superset":
-                    group_id = str(uuid4())
-                elif edited_group_choice != "None":
-                    group_id = edited_group_choice
-                updated = deepcopy(routine_document)
-                target_routine = next(
-                    routine for routine in updated["routines"] if routine["id"] == selected_routine_id
-                )
-                target_slot = next(item for item in target_routine["slots"] if item["id"] == slot["id"])
-                target_slot.update(
-                    required_tags=edited_tags,
-                    default_exercise_id=edited_default,
-                    alternative_exercise_ids=edited_alternatives,
-                    sets=edited_sets.strip(),
-                    reps=edited_reps.strip(),
-                    reference_weight=edited_weight.strip(),
-                    superset_group_id=group_id,
-                )
-                if persist(updated):
-                    st.success("Slot updated.")
-                    st.rerun()
-        if action_columns[1].button("Remove slot", key=f"remove_{slot['id']}"):
-            updated = deepcopy(routine_document)
-            target_routine = next(
-                routine for routine in updated["routines"] if routine["id"] == selected_routine_id
+        if move_columns[1].button(
+            "Move down",
+            key=f"down_block_{anchor_id}",
+            disabled=block_index == len(routine_blocks) - 1,
+            width="stretch",
+        ):
+            reordered_blocks = deepcopy(routine_blocks)
+            reordered_blocks[block_index], reordered_blocks[block_index + 1] = (
+                reordered_blocks[block_index + 1],
+                reordered_blocks[block_index],
             )
-            target_routine["slots"] = [
-                item for item in target_routine["slots"] if item["id"] != slot["id"]
-            ]
-            for order, target_slot in enumerate(
-                sorted(target_routine["slots"], key=lambda item: item["order"]), start=1
-            ):
-                target_slot["order"] = order
+            flattened = [slot for routine_block in reordered_blocks for slot in routine_block]
+            for order, slot in enumerate(flattened, start=1):
+                slot["order"] = order
+            updated = deepcopy(routine_document)
+            target_routine(updated)["slots"] = flattened
             if persist(updated):
-                st.success("Slot removed.")
+                st.rerun()
+
+        edit_as_superset = st.toggle(
+            "Make this a superset",
+            value=len(block) > 1,
+            key=f"is_superset_{anchor_id}",
+        )
+        edit_priority = int(
+            st.number_input(
+                "Priority",
+                min_value=1,
+                max_value=99,
+                value=block[0]["priority"],
+                step=1,
+                key=f"priority_{anchor_id}",
+                help="1 is highest. Changing this does not change routine order.",
+            )
+        )
+
+        if edit_as_superset:
+            edit_count = int(
+                st.number_input(
+                    "Number of exercises in the superset",
+                    min_value=2,
+                    max_value=6,
+                    value=max(2, len(block)),
+                    step=1,
+                    key=f"member_count_{anchor_id}",
+                    help="Increasing adds members; decreasing removes members from the end when saved.",
+                )
+            )
+        else:
+            # Turning off a saved superset splits all its current members into
+            # individual routine exercises instead of deleting any of them.
+            edit_count = len(block)
+            if len(block) > 1:
+                st.caption("Saving will split these members into individual exercises.")
+
+        edit_drafts: list[dict[str, Any] | None] = []
+        for member_index in range(edit_count):
+            initial_slot = block[member_index] if member_index < len(block) else None
+            with st.container(border=edit_as_superset or len(block) > 1):
+                edit_drafts.append(
+                    render_exercise_fields(
+                        f"edit_{anchor_id}_{member_index}",
+                        member_index + 1,
+                        initial_slot,
+                    )
+                )
+
+        action_columns = st.columns(2)
+        if action_columns[0].button(
+            "Save superset" if edit_as_superset else "Save exercise",
+            key=f"save_block_{anchor_id}",
+            type="primary",
+            width="stretch",
+        ):
+            errors = draft_errors(edit_drafts)
+            if errors:
+                for error in errors:
+                    st.error(error)
+            else:
+                original_group_id = block[0].get("superset_group_id")
+                group_id = (original_group_id or str(uuid4())) if edit_as_superset else None
+                replacement_slots = [
+                    slot_from_draft(
+                        draft,
+                        slot_id=(
+                            block[member_index]["id"]
+                            if member_index < len(block)
+                            else str(uuid4())
+                        ),
+                        order=1,
+                        priority=edit_priority,
+                        group_id=group_id,
+                    )
+                    for member_index, draft in enumerate(edit_drafts)
+                ]
+                replaced_ids = {slot["id"] for slot in block}
+                rebuilt_slots: list[dict[str, Any]] = []
+                replacement_inserted = False
+                for slot in ordered_slots(selected_routine):
+                    if slot["id"] in replaced_ids:
+                        if not replacement_inserted:
+                            rebuilt_slots.extend(replacement_slots)
+                            replacement_inserted = True
+                    else:
+                        rebuilt_slots.append(slot)
+                for order, slot in enumerate(rebuilt_slots, start=1):
+                    slot["order"] = order
+                updated = deepcopy(routine_document)
+                target_routine(updated)["slots"] = rebuilt_slots
+                if persist(updated):
+                    st.rerun()
+
+        if action_columns[1].button(
+            "Remove superset" if len(block) > 1 else "Remove exercise",
+            key=f"remove_block_{anchor_id}",
+            width="stretch",
+        ):
+            removed_ids = {slot["id"] for slot in block}
+            remaining_slots = [
+                slot for slot in ordered_slots(selected_routine) if slot["id"] not in removed_ids
+            ]
+            for order, slot in enumerate(remaining_slots, start=1):
+                slot["order"] = order
+            updated = deepcopy(routine_document)
+            target_routine(updated)["slots"] = remaining_slots
+            if persist(updated):
                 st.rerun()

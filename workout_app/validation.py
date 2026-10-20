@@ -126,6 +126,10 @@ def validate_routine_document(document: Any, exercise_ids: set[str]) -> list[str
             else:
                 orders.add(order)
 
+            priority = slot.get("priority")
+            if not isinstance(priority, int) or isinstance(priority, bool) or priority < 1:
+                errors.append(f"{location} needs a positive integer 'priority'.")
+
             required_tags = slot.get("required_tags")
             if not isinstance(required_tags, list) or any(
                 not _is_non_empty_string(tag) for tag in required_tags
@@ -156,6 +160,20 @@ def validate_routine_document(document: Any, exercise_ids: set[str]) -> list[str
             if group_id is not None and not _is_non_empty_string(group_id):
                 errors.append(f"{location} field 'superset_group_id' must be null or a non-empty string.")
 
+        # A superset is selected as one unit, so conflicting member priorities
+        # would make shortening ambiguous. Require one shared group priority.
+        group_priorities: dict[str, set[int]] = {}
+        for slot in slots:
+            if isinstance(slot, dict) and _is_non_empty_string(slot.get("superset_group_id")):
+                priority = slot.get("priority")
+                if isinstance(priority, int) and not isinstance(priority, bool):
+                    group_priorities.setdefault(slot["superset_group_id"], set()).add(priority)
+        for group_id, priorities in group_priorities.items():
+            if len(priorities) > 1:
+                errors.append(
+                    f"{routine_location} superset '{group_id}' must use one shared priority."
+                )
+
     return errors
 
 
@@ -172,4 +190,3 @@ def validate_all(exercise_document: Any, routine_document: Any) -> None:
     errors = exercise_errors + routine_errors
     if errors:
         raise DataValidationError(errors)
-

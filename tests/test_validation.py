@@ -25,6 +25,7 @@ class ValidationTests(unittest.TestCase):
                         {
                             "id": "slot-1",
                             "order": 1,
+                            "priority": 1,
                             "required_tags": ["Pull"],
                             "default_exercise_id": "ex-1",
                             "alternative_exercise_ids": [],
@@ -51,7 +52,16 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(DataValidationError, "duplicated"):
             validate_all(self.exercises, self.routines)
 
+    def test_superset_members_require_shared_priority(self) -> None:
+        second_slot = dict(self.routines["routines"][0]["slots"][0])
+        second_slot.update(id="slot-2", order=2, priority=2)
+        first_slot = self.routines["routines"][0]["slots"][0]
+        first_slot["superset_group_id"] = "group-1"
+        second_slot["superset_group_id"] = "group-1"
+        self.routines["routines"][0]["slots"].append(second_slot)
+        with self.assertRaisesRegex(DataValidationError, "shared priority"):
+            validate_all(self.exercises, self.routines)
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -7,6 +7,7 @@ The included Push 1, Pull 1, and Legs routines are fictional sample data. Replac
 ## Features
 
 - Mobile-friendly workout checklist with session-only completion state
+- Completed exercises move below active work; supersets move only when every member is complete
 - Explicit exercise alternatives per routine slot
 - Supersets that remain adjacent during selection and shuffling
 - Exercise library and routine editors with stable IDs
@@ -59,6 +60,7 @@ An exercise contains:
 A routine contains a stable `id`, a `name`, and ordered `slots`. Each slot contains:
 
 - Stable `id` and positive `order`
+- Positive integer `priority`, where 1 is highest and is kept longest
 - `required_tags`, using match-all filtering in the editor
 - `default_exercise_id` and explicit `alternative_exercise_ids`
 - String values for `sets`, `reps`, and `reference_weight`
@@ -66,9 +68,11 @@ A routine contains a stable `id`, a `name`, and ordered `slots`. Each slot conta
 
 Sets, reps, and reference weight belong to a routine slot—not to the reusable exercise. A workout substitution keeps the slot's prescription and never changes the saved routine.
 
-### Shortened workout rule
+### Order, priority, and shortened workouts
 
-The app considers slots in routine order and treats every superset as one indivisible unit. If a unit would exceed the requested count, the complete unit is skipped and the app considers the next unit. This may produce fewer exercises than requested, but it never silently breaks a superset.
+Order and priority are independent. Order controls where an item appears in the workout. Priority controls which items are retained when fewer exercises are requested; 1 is the highest priority. Equal priorities are resolved by routine order, and the final selection is always displayed in routine order.
+
+The app treats every grouped set as one indivisible unit with one shared priority. It searches for a combination that exactly matches the requested exercise count. If several combinations have the same count, it keeps the highest-priority combination; routine order breaks remaining ties. If an exact count is impossible, it returns the closest lower count. It never silently breaks a superset, triset, or giant set.
 
 ## Saving and backups
 
@@ -101,4 +105,3 @@ data/                        Sample exercise and routine JSON
 tests/                       Standard-library unit tests
 PROJECT_REQUIREMENTS.md      Original project brief
 ```
-
