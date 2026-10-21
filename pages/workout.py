@@ -172,6 +172,39 @@ st.markdown(
     div[class*="st-key-superset_member_"][class*="_label_giantset_"]::before {
         content: "Giant set";
     }
+    @media (max-width: 640px) {
+        html,
+        body,
+        [data-testid="stAppViewContainer"],
+        section[data-testid="stMain"] {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        .block-container {
+            max-width: 100%;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        /* Reserve a slim lane for grouped-set notation. This keeps the
+           desktop bracket relationship while preventing horizontal scroll. */
+        div[class*="st-key-superset_member_"] {
+            width: calc(100% - 5.5rem) !important;
+        }
+        div[class*="st-key-superset_member_"]::after {
+            right: -1.35rem;
+            width: 0.8rem;
+        }
+        div[class*="st-key-superset_member_"][class*="_label_"]::before {
+            right: -5.35rem;
+            padding: 0.1rem 0.25rem;
+            font-size: 0.72rem;
+        }
+        div[class*="st-key-workout_card_"] [data-testid="stVerticalBlockBorderWrapper"],
+        div[class*="st-key-superset_member_"] [data-testid="stVerticalBlockBorderWrapper"] {
+            padding-left: 0.65rem;
+            padding-right: 0.65rem;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -218,20 +251,41 @@ def render_workout_row(
         row["completed"] = completed
 
         selected_exercise_id = row["selected_exercise_id"]
-        if len(allowed_ids) > 1:
-            selected_exercise_id = details_column.selectbox(
-                "Exercise",
-                options=allowed_ids,
-                index=allowed_ids.index(selected_exercise_id),
-                format_func=lambda exercise_id: exercise_by_id[exercise_id]["name"],
-                key=f"alternative_{widget_nonce}_{slot['id']}",
-            )
-        else:
-            exercise_name = exercise_by_id[selected_exercise_id]["name"]
-            details_column.markdown(f"### {'~~' + exercise_name + '~~' if completed else exercise_name}")
-        row["selected_exercise_id"] = selected_exercise_id
+        name_column, swap_column = details_column.columns(
+            [5, 2], vertical_alignment="center"
+        )
+        exercise_name = exercise_by_id[selected_exercise_id]["name"]
+        name_column.markdown(
+            f"### {'~~' + exercise_name + '~~' if completed else exercise_name}"
+        )
 
-        exercise = exercise_by_id[selected_exercise_id]
+        has_alternates = len(allowed_ids) > 1
+        with swap_column.popover(
+            "Swap",
+            icon=":material/swap_horiz:",
+            disabled=not has_alternates,
+            help=(
+                "Choose another exercise for this slot."
+                if has_alternates
+                else "No alternate exercises are configured for this slot."
+            ),
+            width="stretch",
+            key=f"swap_{widget_nonce}_{slot['id']}",
+        ):
+            st.caption("Choose an exercise")
+            for exercise_id in allowed_ids:
+                is_current = exercise_id == selected_exercise_id
+                if st.button(
+                    exercise_by_id[exercise_id]["name"],
+                    key=f"swap_option_{widget_nonce}_{slot['id']}_{exercise_id}",
+                    disabled=is_current,
+                    type="primary" if is_current else "secondary",
+                    width="stretch",
+                ):
+                    row["selected_exercise_id"] = exercise_id
+                    st.rerun()
+
+        exercise = exercise_by_id[row["selected_exercise_id"]]
         if completed:
             details_column.caption("✅ Completed")
         details_column.write(
