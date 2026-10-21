@@ -13,10 +13,16 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
+from workout_app.calendar_logic import empty_calendar_document
 from workout_app.migrations import migrate_documents
 from workout_app.users import user_name
-from workout_app.validation import DataValidationError, validate_all
+from workout_app.validation import (
+    DataValidationError,
+    validate_all,
+    validate_calendar_document,
+)
 from workout_app.workout_logic import is_valid_weight_input, new_workout_snapshot
 
 
@@ -113,6 +119,28 @@ def save_data(
     _atomic_write_json(routines_path, routine_document)
 
 
+def _calendar_path(user_id: str) -> Path:
+    return _user_directory(user_id) / "calendar.json"
+
+
+def load_calendar(user_id: str) -> dict[str, Any]:
+    """Load a profile calendar, treating a missing file as an empty calendar."""
+
+    path = _calendar_path(user_id)
+    if not path.exists():
+        return empty_calendar_document()
+    document = _read_json(path)
+    validate_calendar_document(document)
+    return document
+
+
+def save_calendar(user_id: str, calendar_document: dict[str, Any]) -> None:
+    """Validate and atomically persist one profile's calendar."""
+
+    validate_calendar_document(calendar_document)
+    _atomic_write_json(_calendar_path(user_id), calendar_document)
+
+
 def _draft_path(user_id: str) -> Path:
     return _user_directory(user_id) / "active_workout.json"
 
@@ -122,12 +150,17 @@ def save_workout_draft(
     routine_id: str,
     requested_count: int,
     snapshot: list[dict[str, Any]],
+    *,
+    workout_session_id: str | None = None,
+    started_at: str | None = None,
 ) -> None:
     """Persist the recoverable parts of an in-progress workout."""
 
     document = {
-        "draft_version": 1,
+        "draft_version": 2,
         "saved_at": datetime.now(UTC_TIMEZONE).isoformat(),
+        "workout_session_id": workout_session_id or str(uuid4()),
+        "started_at": started_at or datetime.now(UTC_TIMEZONE).isoformat(),
         "routine_id": routine_id,
         "requested_count": requested_count,
         "rows": [
@@ -176,7 +209,7 @@ def load_workout_draft(
             delete_workout_draft(user_id)
             return None
 
-        if document.get("draft_version") != 1:
+        if document.get("draft_version") not in {1, 2}:
             return None
         routine_id = str(document["routine_id"])
         requested_count = int(document["requested_count"])
@@ -218,6 +251,11 @@ def load_workout_draft(
 
         return {
             "saved_at": saved_at,
+            "workout_session_id": str(
+                document.get("workout_session_id")
+                or f"recovered-{routine_id}-{saved_at.isoformat()}"
+            ),
+            "started_at": str(document.get("started_at") or saved_at.isoformat()),
             "routine_id": routine_id,
             "routine_name": routine["name"],
             "requested_count": requested_count,
@@ -227,18 +265,25 @@ def load_workout_draft(
         return None
 
 
-def data_bundle_json(exercise_document: dict[str, Any], routine_document: dict[str, Any]) -> str:
+def data_bundle_json(
+    exercise_document: dict[str, Any],
+    routine_document: dict[str, Any],
+    calendar_document: dict[str, Any],
+) -> str:
     """Create a portable single-file backup for browser download."""
 
     bundle = {
-        "bundle_version": 1,
+        "bundle_version": 2,
         "exercises": deepcopy(exercise_document),
         "routines": deepcopy(routine_document),
+        "calendar": deepcopy(calendar_document),
     }
     return json.dumps(bundle, indent=2, ensure_ascii=False) + "\n"
 
 
-def parse_data_bundle(raw_data: bytes) -> tuple[dict[str, Any], dict[str, Any]]:
+def parse_data_bundle(
+    raw_data: bytes,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Decode and validate a user-uploaded backup without writing it first."""
 
     try:
@@ -250,8 +295,8 @@ def parse_data_bundle(raw_data: bytes) -> tuple[dict[str, Any], dict[str, Any]]:
             f"The imported backup has malformed JSON at line {error.lineno}, column {error.colno}."
         ) from error
 
-    if not isinstance(bundle, dict) or bundle.get("bundle_version") != 1:
-        raise DataValidationError(["The uploaded file is not a version 1 workout-data backup."])
+    if not isinstance(bundle, dict) or bundle.get("bundle_version") not in {1, 2}:
+        raise DataValidationError(["The uploaded file is not a supported workout-data backup."])
     exercise_document = bundle.get("exercises")
     routine_document = bundle.get("routines")
     if isinstance(exercise_document, dict) and isinstance(routine_document, dict):
@@ -259,7 +304,9 @@ def parse_data_bundle(raw_data: bytes) -> tuple[dict[str, Any], dict[str, Any]]:
             exercise_document, routine_document
         )
     validate_all(exercise_document, routine_document)
-    return exercise_document, routine_document
+    calendar_document = bundle.get("calendar", empty_calendar_document())
+    validate_calendar_document(calendar_document)
+    return exercise_document, routine_document, calendar_document
 
 
 def exercise_reference_locations(routine_document: dict[str, Any], exercise_id: str) -> list[str]:

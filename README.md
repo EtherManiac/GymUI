@@ -12,6 +12,8 @@ The included Push 1, Pull 1, and Legs routines are fictional sample data. Replac
 - Supersets that remain adjacent during selection and shuffling
 - Exercise library and routine editors with stable IDs
 - Independent exercise importing between user profiles
+- Profile calendars for scheduling and manually logging routines
+- Explicit workout completion that records exercise choices and weights
 - Validated, human-readable JSON storage
 - Single-file backup download and restore
 - Lightweight Tyler, Mia, and Dev profiles without authentication or credentials
@@ -38,7 +40,7 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Streamlit prints a local URL, normally `http://localhost:8501`. Use the sidebar to move between Workout, Edit exercises, and Edit routines.
+Streamlit prints a local URL, normally `http://localhost:8501`. Use the sidebar to move between Workout, Calendar, Edit exercises, and Edit routines.
 
 Run the standard-library test suite with:
 
@@ -48,9 +50,10 @@ python -m unittest discover -s tests -v
 
 ## Data model
 
-Each profile has independent `exercises.json` and `routines.json` files under
-`data/users/<user-id>/`. Both documents use `schema_version: 1`. The bundled
-sample data belongs to Dev; Tyler and Mia begin with empty libraries.
+Each profile has independent `exercises.json`, `routines.json`, and (after its
+first calendar edit) `calendar.json` files under `data/users/<user-id>/`. All
+documents use `schema_version: 1`. The bundled sample data belongs to Dev;
+Tyler and Mia begin with empty libraries.
 
 An exercise contains:
 
@@ -71,6 +74,15 @@ A routine contains a stable `id`, a `name`, and ordered `slots`. Each slot conta
 
 Sets, reps, and reference weight belong to a routine slot—not to the reusable exercise. A workout substitution keeps the slot's prescription and never changes the saved routine.
 
+### Calendar and completed workouts
+
+The Calendar page permits one scheduled routine per date and any number of
+completed entries. Its month view marks scheduled and completed days; select a
+day to inspect or remove its entries. A completed entry stores a snapshot of the exercises,
+prescriptions, substitutions, and entered weights so later routine edits do
+not rewrite workout history. A workout is recorded only when every displayed
+exercise is checked and the user selects **Finish workout**.
+
 ### Order, priority, and shortened workouts
 
 Order and priority are independent. Order controls where an item appears in the workout. Priority controls which items are retained when fewer exercises are requested; 1 is the highest priority. Equal priorities are resolved by routine order, and the final selection is always displayed in routine order.
@@ -85,7 +97,10 @@ stored separately in `active_workout.json` for up to 12 hours so checked items,
 weights, substitutions, and order can be recovered after a session ends. This
 draft never modifies the saved routine.
 
-In the sidebar, **Data backup** downloads both JSON documents as one portable backup. Import validates the entire backup before replacing local data.
+In the sidebar, **Data backup** downloads exercises, routines, and calendar
+history as one portable backup. Import validates the entire backup before
+replacing local data. Backups created before calendar support remain accepted
+and restore with an empty calendar.
 
 Streamlit Community Cloud does not provide durable application filesystem storage. Edits made in a deployed app can disappear after a restart, redeployment, or replica change. Hosted users should download a backup after editing and import it in a future session. This keeps the MVP free of external services, but it requires deliberate user action. A durable database or object store can be added later only if its credentials, cost, and operational tradeoffs are explicitly approved.
 
@@ -104,7 +119,8 @@ No secrets are required. Commit intentional changes to the seed JSON files when 
 ```text
 app.py                       Native navigation entry point
 pages/                       Workout and editor page scripts
-workout_app/storage.py       JSON loading, atomic saves, and backup handling
+workout_app/storage.py       JSON loading, atomic saves, drafts, and backups
+workout_app/calendar_logic.py Calendar scheduling and completion transforms
 workout_app/validation.py    Schema and cross-reference checks
 workout_app/workout_logic.py Pure selection, grouping, and shuffle behavior
 workout_app/ui_helpers.py    Shared Streamlit controls

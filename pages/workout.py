@@ -2,22 +2,32 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import streamlit as st
 from st_keyup import st_keyup
 
+from workout_app.calendar_logic import local_today, log_completed_workout
 from workout_app.profile_ui import require_active_user
 from workout_app.reorder_component import workout_drag_reorder
 from workout_app.storage import (
     DataLoadError,
     delete_workout_draft,
+    load_calendar,
     load_workout_draft,
+    save_calendar,
     save_workout_draft,
 )
-from workout_app.ui_helpers import load_data_or_stop, render_data_portability
+from workout_app.ui_helpers import (
+    load_data_or_stop,
+    render_data_portability,
+    show_save_error,
+)
+from workout_app.validation import DataValidationError
 from workout_app.workout_logic import (
     group_slots_by_snapshot,
     is_valid_weight_input,
@@ -37,6 +47,9 @@ render_data_portability(active_user_id, exercise_document, routine_document)
 
 st.title("Workout")
 st.caption("Choose a routine, adjust its length, and work through the checklist.")
+completion_message = st.session_state.pop("workout_completion_message", None)
+if completion_message:
+    st.success(completion_message)
 
 routines = sorted(routine_document["routines"], key=lambda routine: routine["name"].casefold())
 if not routines:
@@ -71,6 +84,8 @@ if saved_draft and not st.session_state.get("workout_draft_handled", False):
         st.session_state.workout_routine_id = routine_id
         st.session_state[f"workout_requested_count_{routine_id}"] = requested
         st.session_state.active_workout = saved_draft["snapshot"]
+        st.session_state.workout_session_id = saved_draft["workout_session_id"]
+        st.session_state.workout_started_at = saved_draft["started_at"]
         st.session_state.active_workout_identity = (
             active_user_id,
             routine_id,
@@ -83,6 +98,10 @@ if saved_draft and not st.session_state.get("workout_draft_handled", False):
         st.rerun()
     if fresh_column.button("Start fresh", width="stretch"):
         delete_workout_draft(active_user_id)
+        scheduled_routine_id = st.session_state.get("todays_scheduled_routine_id")
+        if scheduled_routine_id in routine_ids:
+            st.session_state.workout_routine_id = scheduled_routine_id
+            st.session_state.pop("active_workout_identity", None)
         st.session_state.workout_draft_handled = True
         st.rerun()
     st.stop()
@@ -131,6 +150,8 @@ def reset_active_workout() -> None:
         int(requested_count),
     )
     st.session_state.workout_widget_nonce = st.session_state.get("workout_widget_nonce", 0) + 1
+    st.session_state.workout_session_id = str(uuid4())
+    st.session_state.workout_started_at = datetime.now(timezone.utc).isoformat()
     delete_workout_draft(active_user_id)
 
 
@@ -139,6 +160,10 @@ if st.session_state.get("active_workout_identity") != current_identity:
     reset_active_workout()
 
 snapshot: list[dict[str, Any]] = st.session_state.active_workout
+st.session_state.setdefault("workout_session_id", str(uuid4()))
+st.session_state.setdefault(
+    "workout_started_at", datetime.now(timezone.utc).isoformat()
+)
 
 
 def workout_has_progress() -> bool:
@@ -172,6 +197,8 @@ def sync_workout_draft() -> None:
                 selected_routine_id,
                 int(requested_count),
                 snapshot,
+                workout_session_id=st.session_state.workout_session_id,
+                started_at=st.session_state.workout_started_at,
             )
         else:
             delete_workout_draft(active_user_id)
@@ -621,6 +648,54 @@ sync_workout_draft()
 if did_reorder_completed:
     st.rerun()
 st.progress(completed_count / len(snapshot), text=f"{completed_count} of {len(snapshot)} complete")
+
+workout_is_complete = completed_count == len(snapshot)
+if st.button(
+    "Finish workout",
+    type="primary",
+    disabled=not workout_is_complete,
+    width="stretch",
+):
+    try:
+        calendar_document = load_calendar(active_user_id)
+        has_matching_schedule = (
+            st.session_state.get("todays_scheduled_routine_id")
+            == selected_routine_id
+        )
+        updated_calendar, _ = log_completed_workout(
+            calendar_document,
+            local_today(),
+            selected_routine,
+            snapshot,
+            exercise_by_id,
+            event_id=str(uuid4()),
+            workout_session_id=st.session_state.workout_session_id,
+            completed_at=datetime.now(timezone.utc).isoformat(),
+            source="calendar" if has_matching_schedule else "workout",
+        )
+        save_calendar(active_user_id, updated_calendar)
+        delete_workout_draft(active_user_id)
+    except (DataLoadError, DataValidationError) as error:
+        show_save_error(error)
+    else:
+        st.session_state.workout_completion_message = (
+            f"{selected_routine['name']} was logged to your calendar."
+        )
+        st.session_state.pop("active_workout", None)
+        st.session_state.pop("active_workout_identity", None)
+        st.session_state.pop("workout_session_id", None)
+        st.session_state.pop("workout_started_at", None)
+        if has_matching_schedule:
+            st.session_state.pop("todays_scheduled_routine_id", None)
+            st.session_state.pop("calendar_scheduled_event_id", None)
+        else:
+            scheduled_routine_id = st.session_state.get(
+                "todays_scheduled_routine_id"
+            )
+            if scheduled_routine_id in routine_by_id:
+                st.session_state.workout_routine_id = scheduled_routine_id
+                st.session_state.open_scheduled_workout_requested = True
+        st.rerun()
 
 # A compact motivational footer, kept below the workout controls and progress.
 st.write("")

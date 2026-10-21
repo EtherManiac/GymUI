@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "events": [
+    {
+      "id": "67522f53-a6df-4bc2-bfcd-c5a7861d4bb6",
+      "date": "2026-10-08",
+      "status": "completed",
+      "routine_id": "b82da148-4e79-4cc2-95cd-68891b35b50a",
+      "routine_name": "Legs",
+      "workout_session_id": "manual-837ddbcb-dccd-495c-8d0f-6127d7944410",
+      "completed_at": "2026-10-21T04:55:41.555475+00:00",
+      "source": "manual",
+      "exercises": [
+        {
+          "slot_id": "70db0e77-64d8-4fb3-8048-7b7ff2f5c485",
+          "exercise_id": "9f6ad790-d89b-42d2-8da7-661bdf8562ff",
+          "exercise_name": "Barbell Back Squat",
+          "sets": "3",
+          "reps": "6-10",
+          "reference_weight": "135 lb",
+          "weight_used": ""
+        },
+        {
+          "slot_id": "ff0a7f44-7c39-41f0-9451-228ff4263389",
+          "exercise_id": "7be20477-e699-44a4-9397-805bbdc19aad",
+          "exercise_name": "Romanian Deadlift",
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "95 lb",
+          "weight_used": ""
+        },
+        {
+          "slot_id": "fdd5480f-6bf1-459d-94dd-b4b9137b860b",
+          "exercise_id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+          "exercise_name": "Barbell Bench Press",
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "weight_used": ""
+        },
+        {
+          "slot_id": "471cfc12-8557-498f-9a40-eceddc9467ec",
+          "exercise_id": "140a7006-4fb2-4e2e-8f3f-8036e30199ee",
+          "exercise_name": "Dumbbell Bench Press",
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "weight_used": ""
+        },
+        {
+          "slot_id": "b5a56a68-75f4-44af-8c32-b09355bfabc8",
+          "exercise_id": "9d28751d-06cf-4037-aa88-99d8a435335a",
+          "exercise_name": "Standing Calf Raise",
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "Bodyweight",
+          "weight_used": ""
+        },
+        {
+          "slot_id": "bf1c0631-feee-468a-abcc-ddcfe78e81f5",
+          "exercise_id": "8c4f6e88-fcba-4809-9621-c8b8705b6bec",
+          "exercise_name": "Seated Leg Curl",
+          "sets": "3",
+          "reps": "10-15",
+          "reference_weight": "50 lb",
+          "weight_used": ""
+        }
+      ]
+    }
+  ]
+}

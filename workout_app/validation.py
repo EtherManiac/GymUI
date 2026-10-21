@@ -6,6 +6,7 @@ same way on every page.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 
@@ -206,5 +207,96 @@ def validate_all(exercise_document: Any, routine_document: Any) -> None:
     } if isinstance(exercise_document, dict) else set()
     routine_errors = validate_routine_document(routine_document, exercise_ids)
     errors = exercise_errors + routine_errors
+    if errors:
+        raise DataValidationError(errors)
+
+
+def validate_calendar_document(document: Any) -> None:
+    """Validate scheduled and completed calendar records."""
+
+    errors: list[str] = []
+    if not isinstance(document, dict):
+        raise DataValidationError(["Calendar data must be a JSON object."])
+    if document.get("schema_version") != 1:
+        errors.append("Calendar data must use schema_version 1.")
+    events = document.get("events")
+    if not isinstance(events, list):
+        raise DataValidationError(errors + ["The calendar 'events' field must be a list."])
+
+    seen_ids: set[str] = set()
+    scheduled_dates: set[str] = set()
+    seen_sessions: set[str] = set()
+    for index, event in enumerate(events, start=1):
+        location = f"Calendar event #{index}"
+        if not isinstance(event, dict):
+            errors.append(f"{location} must be an object.")
+            continue
+        event_id = event.get("id")
+        if not _is_non_empty_string(event_id):
+            errors.append(f"{location} needs a non-empty 'id'.")
+        elif event_id in seen_ids:
+            errors.append(f"Calendar event ID '{event_id}' is duplicated.")
+        else:
+            seen_ids.add(event_id)
+
+        date_text = event.get("date")
+        try:
+            date.fromisoformat(date_text)
+        except (TypeError, ValueError):
+            errors.append(f"{location} needs an ISO calendar 'date'.")
+
+        if not _is_non_empty_string(event.get("routine_id")):
+            errors.append(f"{location} needs a non-empty 'routine_id'.")
+        if not _is_non_empty_string(event.get("routine_name")):
+            errors.append(f"{location} needs a non-empty 'routine_name'.")
+
+        status = event.get("status")
+        if status == "scheduled":
+            if isinstance(date_text, str) and date_text in scheduled_dates:
+                errors.append(f"Only one routine may be scheduled on {date_text}.")
+            elif isinstance(date_text, str):
+                scheduled_dates.add(date_text)
+            if not _is_non_empty_string(event.get("created_at")):
+                errors.append(f"{location} needs a non-empty 'created_at'.")
+        elif status == "completed":
+            session_id = event.get("workout_session_id")
+            if not _is_non_empty_string(session_id):
+                errors.append(f"{location} needs a non-empty 'workout_session_id'.")
+            elif session_id in seen_sessions:
+                errors.append(f"Workout session '{session_id}' is duplicated.")
+            else:
+                seen_sessions.add(session_id)
+            if not _is_non_empty_string(event.get("completed_at")):
+                errors.append(f"{location} needs a non-empty 'completed_at'.")
+            if event.get("source") not in {"workout", "calendar", "manual"}:
+                errors.append(f"{location} has an invalid completion source.")
+            exercises = event.get("exercises")
+            if not isinstance(exercises, list):
+                errors.append(f"{location} field 'exercises' must be a list.")
+            else:
+                for exercise_index, exercise in enumerate(exercises, start=1):
+                    exercise_location = f"{location}, exercise #{exercise_index}"
+                    if not isinstance(exercise, dict):
+                        errors.append(f"{exercise_location} must be an object.")
+                        continue
+                    for field in (
+                        "slot_id",
+                        "exercise_id",
+                        "exercise_name",
+                        "sets",
+                        "reps",
+                        "reference_weight",
+                    ):
+                        if not _is_non_empty_string(exercise.get(field)):
+                            errors.append(
+                                f"{exercise_location} needs a non-empty '{field}'."
+                            )
+                    if not isinstance(exercise.get("weight_used", ""), str):
+                        errors.append(
+                            f"{exercise_location} field 'weight_used' must be a string."
+                        )
+        else:
+            errors.append(f"{location} has an invalid 'status'.")
+
     if errors:
         raise DataValidationError(errors)

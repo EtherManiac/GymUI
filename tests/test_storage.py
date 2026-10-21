@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
 from workout_app import storage
 from workout_app.workout_logic import new_workout_snapshot
+from workout_app.calendar_logic import empty_calendar_document
 
 
 class ProfileStorageTests(unittest.TestCase):
@@ -80,6 +82,8 @@ class ProfileStorageTests(unittest.TestCase):
         self.assertIsNotNone(restored)
         self.assertTrue(restored["snapshot"][0]["completed"])
         self.assertEqual(restored["snapshot"][0]["weight_used"], "55.5")
+        self.assertTrue(restored["workout_session_id"])
+        self.assertTrue(restored["started_at"])
 
         expired = storage.load_workout_draft(
             "dev",
@@ -88,6 +92,46 @@ class ProfileStorageTests(unittest.TestCase):
         )
         self.assertIsNone(expired)
         self.assertFalse((Path(self.temporary_directory.name) / "dev" / "active_workout.json").exists())
+
+    def test_calendar_is_profile_scoped_and_included_in_backups(self) -> None:
+        calendar = {
+            "schema_version": 1,
+            "events": [
+                {
+                    "id": "scheduled",
+                    "date": "2026-10-21",
+                    "status": "scheduled",
+                    "routine_id": "routine-1",
+                    "routine_name": "Test workout",
+                    "created_at": "2026-10-20T12:00:00+00:00",
+                }
+            ],
+        }
+        storage.save_calendar("tyler", calendar)
+
+        self.assertEqual(storage.load_calendar("tyler"), calendar)
+        self.assertEqual(storage.load_calendar("mia"), empty_calendar_document())
+
+        raw_bundle = storage.data_bundle_json(
+            self.empty_exercises, self.empty_routines, calendar
+        ).encode("utf-8")
+        exercises, routines, restored_calendar = storage.parse_data_bundle(raw_bundle)
+        self.assertEqual(exercises, self.empty_exercises)
+        self.assertEqual(routines, self.empty_routines)
+        self.assertEqual(restored_calendar, calendar)
+
+    def test_version_one_backup_restores_with_an_empty_calendar(self) -> None:
+        raw_bundle = json.dumps(
+            {
+                "bundle_version": 1,
+                "exercises": self.empty_exercises,
+                "routines": self.empty_routines,
+            }
+        ).encode("utf-8")
+
+        _, _, calendar = storage.parse_data_bundle(raw_bundle)
+
+        self.assertEqual(calendar, empty_calendar_document())
 
 
 if __name__ == "__main__":

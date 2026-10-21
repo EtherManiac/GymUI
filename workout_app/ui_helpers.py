@@ -9,8 +9,10 @@ import streamlit as st
 from workout_app.storage import (
     DataLoadError,
     data_bundle_json,
+    load_calendar,
     load_data,
     parse_data_bundle,
+    save_calendar,
     save_data,
 )
 from workout_app.validation import DataValidationError
@@ -49,13 +51,23 @@ def render_data_portability(
         st.caption(
             "Cloud file edits may disappear after a restart. Download a backup after editing."
         )
-        st.download_button(
-            "Download backup",
-            data=data_bundle_json(exercise_document, routine_document),
-            file_name=f"workout_planner_{user_id}_backup.json",
-            mime="application/json",
-            width="stretch",
-        )
+        try:
+            calendar_document = load_calendar(user_id)
+        except (DataLoadError, DataValidationError) as error:
+            st.error("The calendar must be repaired or replaced before downloading a backup.")
+            st.code(str(error))
+        else:
+            st.download_button(
+                "Download backup",
+                data=data_bundle_json(
+                    exercise_document,
+                    routine_document,
+                    calendar_document,
+                ),
+                file_name=f"workout_planner_{user_id}_backup.json",
+                mime="application/json",
+                width="stretch",
+            )
         uploaded_backup = st.file_uploader(
             "Restore a backup", type=["json"], key=f"backup_uploader_{user_id}"
         )
@@ -65,8 +77,11 @@ def render_data_portability(
             width="stretch",
         ):
             try:
-                imported_exercises, imported_routines = parse_data_bundle(uploaded_backup.getvalue())
+                imported_exercises, imported_routines, imported_calendar = (
+                    parse_data_bundle(uploaded_backup.getvalue())
+                )
                 save_data(user_id, imported_exercises, imported_routines)
+                save_calendar(user_id, imported_calendar)
             except (DataLoadError, DataValidationError) as error:
                 show_save_error(error)
             else:
