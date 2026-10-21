@@ -32,10 +32,12 @@ from workout_app.ui_helpers import (
 )
 from workout_app.validation import DataValidationError
 from workout_app.workout_logic import (
+    active_group_label,
     group_slots_by_snapshot,
     is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
+    remove_snapshot_slot,
     reorder_snapshot_units,
     restore_snapshot_order,
     shuffle_snapshot,
@@ -178,8 +180,12 @@ def workout_has_progress() -> bool:
     base_order = [
         row["slot"]["id"] for row in sorted(snapshot, key=lambda row: row["base_position"])
     ]
+    expected_exercise_count = len(
+        new_workout_snapshot(selected_routine, int(requested_count))
+    )
     return (
         int(requested_count) != slot_count
+        or len(snapshot) != expected_exercise_count
         or natural_order != base_order
         or any(
             row["completed"]
@@ -271,9 +277,17 @@ workout_drag_reorder(
 )
 
 
+def remove_slot_from_active_workout(slot_id: str) -> None:
+    """Remove a row before the dialog-triggered rerun and persist the draft."""
+
+    if remove_snapshot_slot(snapshot, slot_id):
+        sync_workout_draft()
+        st.rerun(scope="app")
+
+
 @st.dialog("Exercise details", width="small", position="center")
-def show_exercise_details(exercise_id: str) -> None:
-    """Show only the selected exercise's notes and optional external link."""
+def show_exercise_details(exercise_id: str, slot_id: str) -> None:
+    """Show details and controls that affect only the active workout."""
 
     exercise = exercise_by_id[exercise_id]
     st.subheader(exercise["name"])
@@ -290,6 +304,17 @@ def show_exercise_details(exercise_id: str) -> None:
         )
     if not notes and not exercise_url:
         st.caption("No notes or link have been added for this exercise.")
+    st.divider()
+    st.button(
+        "Remove from this workout",
+        icon=":material/remove_circle:",
+        disabled=len(snapshot) <= 1,
+        width="stretch",
+        on_click=remove_slot_from_active_workout,
+        args=(slot_id,),
+    )
+    if len(snapshot) <= 1:
+        st.caption("At least one exercise must remain in the workout.")
 
 # Every exercise uses the same full-width card. Superset membership is encoded
 # only in the card key so CSS can overlay bracket segments outside the cards;
@@ -506,7 +531,10 @@ st.markdown(
 
 
 def render_workout_row(
-    row: dict[str, Any], member_index: int | None = None, member_count: int = 1
+    row: dict[str, Any],
+    member_index: int | None = None,
+    member_count: int = 1,
+    group_label: str | None = None,
 ) -> None:
     """Render one exercise card and update its session-only selections."""
 
@@ -527,9 +555,8 @@ def render_workout_row(
             label_marker = "_label_gap"
         elif member_count % 2 == 1 and member_index == member_count // 2:
             label_marker = "_label_center"
-        if label_marker:
-            group_name = "superset" if member_count == 2 else "triset" if member_count == 3 else "giantset"
-            label_marker += f"_label_{group_name}"
+        if label_marker and group_label:
+            label_marker += f"_label_{group_label.lower().replace(' ', '')}"
         card_key = f"superset_member_{position}{label_marker}_{safe_slot_id}"
 
     with st.container(border=True, key=card_key):
@@ -584,7 +611,7 @@ def render_workout_row(
                     icon=":material/info:",
                 )
                 if show_details:
-                    show_exercise_details(selected_exercise_id)
+                    show_exercise_details(selected_exercise_id, slot["id"])
 
                 with st.popover(
                     "Swap",
@@ -636,10 +663,19 @@ def render_workout_row(
 
 
 for unit in group_slots_by_snapshot(snapshot):
-    is_superset = len(unit) > 1 and bool(unit[0]["slot"].get("superset_group_id"))
-    if is_superset:
+    group_label = (
+        active_group_label(len(unit))
+        if unit[0]["slot"].get("superset_group_id")
+        else None
+    )
+    if group_label:
         for member_index, row in enumerate(unit):
-            render_workout_row(row, member_index=member_index, member_count=len(unit))
+            render_workout_row(
+                row,
+                member_index=member_index,
+                member_count=len(unit),
+                group_label=group_label,
+            )
     else:
         render_workout_row(unit[0])
 

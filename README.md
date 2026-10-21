@@ -108,6 +108,10 @@ stored separately in `active_workout.json` for up to 12 hours so checked items,
 weights, substitutions, and order can be recovered after a session ends. This
 draft never modifies the saved routine.
 
+An exercise can also be removed selectively from the active workout through
+its information dialog. This preserves the routine itself and all remaining
+checkbox, weight, substitution, and ordering state.
+
 In the sidebar, **Data backup** downloads exercises, routines, calendar history,
 and the workout split as one portable backup. Import validates the entire backup before
 replacing local data. Backups created before calendar support remain accepted

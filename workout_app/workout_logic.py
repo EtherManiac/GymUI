@@ -149,6 +149,18 @@ def group_slots_by_snapshot(snapshot: list[dict[str, Any]]) -> list[list[dict[st
     return units
 
 
+def active_group_label(member_count: int) -> str | None:
+    """Name a grouped set from the members still present in the workout."""
+
+    if member_count < 2:
+        return None
+    if member_count == 2:
+        return "Superset"
+    if member_count == 3:
+        return "Triset"
+    return "Giant set"
+
+
 def snapshot_unit_id(unit: list[dict[str, Any]]) -> str:
     """Return a stable ID for a single slot or a grouped workout unit."""
 
@@ -174,6 +186,22 @@ def reorder_snapshot_units(
     for position, row in enumerate(snapshot):
         row["base_position"] = position
     return changed
+
+
+def remove_snapshot_slot(snapshot: list[dict[str, Any]], slot_id: str) -> bool:
+    """Remove one exercise from this workout only, preserving all other state."""
+
+    if len(snapshot) <= 1:
+        return False
+    original_length = len(snapshot)
+    snapshot[:] = [row for row in snapshot if row["slot"]["id"] != slot_id]
+    if len(snapshot) == original_length:
+        return False
+    for position, row in enumerate(
+        sorted(snapshot, key=lambda item: item.get("base_position", 0))
+    ):
+        row["base_position"] = position
+    return True
 
 
 def restore_snapshot_order(snapshot: list[dict[str, Any]]) -> None:

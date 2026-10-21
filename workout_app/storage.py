@@ -255,10 +255,18 @@ def load_workout_draft(
 
         clean_snapshot = new_workout_snapshot(routine, requested_count)
         rows = document["rows"]
-        if not isinstance(rows, list) or len(rows) != len(clean_snapshot):
+        if (
+            not isinstance(rows, list)
+            or not rows
+            or len(rows) > len(clean_snapshot)
+        ):
             return None
-        saved_by_slot = {row["slot_id"]: row for row in rows}
-        if set(saved_by_slot) != {row["slot"]["id"] for row in clean_snapshot}:
+        saved_slot_ids = [row["slot_id"] for row in rows]
+        available_slot_ids = {row["slot"]["id"] for row in clean_snapshot}
+        if (
+            len(saved_slot_ids) != len(set(saved_slot_ids))
+            or not set(saved_slot_ids).issubset(available_slot_ids)
+        ):
             return None
 
         restored: list[dict[str, Any]] = []

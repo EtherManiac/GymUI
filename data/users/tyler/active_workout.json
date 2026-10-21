@@ -1,0 +1,66 @@
+{
+  "draft_version": 2,
+  "saved_at": "2026-10-21T05:27:51.964699+00:00",
+  "workout_session_id": "a4556ed2-0b59-47f8-93b2-2dad8cd6752f",
+  "started_at": "2026-10-21T05:27:51.947231+00:00",
+  "routine_id": "acb9363c-b29a-4f26-98f0-af57bdcc62f5",
+  "requested_count": 8,
+  "rows": [
+    {
+      "slot_id": "cf8a9cd1-792e-47ee-9099-9e76ff6d5887",
+      "selected_exercise_id": "5f603328-a933-4895-a23a-cc346b84b197",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 0
+    },
+    {
+      "slot_id": "5077c9df-2265-4337-8c2d-180a87a0a50a",
+      "selected_exercise_id": "dba21705-9627-4174-b446-91a3f88151b0",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 1
+    },
+    {
+      "slot_id": "70e89656-fecf-4eaa-a543-a99726943ab8",
+      "selected_exercise_id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 2
+    },
+    {
+      "slot_id": "19c720cc-5919-49a3-845c-29227b5fe9df",
+      "selected_exercise_id": "1ff93b10-646f-4712-b1a0-4e10d2d788db",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 3
+    },
+    {
+      "slot_id": "d4ef7fc5-79e5-42cc-846c-4dd2254d7524",
+      "selected_exercise_id": "9f6ad790-d89b-42d2-8da7-661bdf8562ff",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 4
+    },
+    {
+      "slot_id": "0750c8b0-c405-493a-ba7a-7bcbf870260c",
+      "selected_exercise_id": "b5728178-c2ee-4643-964a-c2295b89d5ca",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 5
+    },
+    {
+      "slot_id": "7e3d8ed0-37d7-435e-bbd5-8f403599dae5",
+      "selected_exercise_id": "cee0afa8-e2a7-4e45-9267-a0770bf0e7ae",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 6
+    },
+    {
+      "slot_id": "50552ffe-aa08-4504-930a-c9667306e774",
+      "selected_exercise_id": "9d28751d-06cf-4037-aa88-99d8a435335a",
+      "completed": false,
+      "weight_used": "",
+      "base_position": 7
+    }
+  ]
+}

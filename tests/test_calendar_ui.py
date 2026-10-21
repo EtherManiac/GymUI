@@ -173,6 +173,46 @@ class CalendarUiTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(app.title[0].value, "Workout split")
 
+    def test_exercise_can_be_removed_only_from_active_workout(self) -> None:
+        _, routine_document = storage.load_data("dev")
+        original_slot_counts = {
+            routine["id"]: len(routine["slots"])
+            for routine in routine_document["routines"]
+        }
+        app = AppTest.from_file(
+            Path(__file__).resolve().parent.parent / "app.py",
+            default_timeout=10,
+        )
+        app.session_state["active_user_id"] = "dev"
+        app.run()
+        self.assertFalse(app.exception)
+        original_exercise_count = len(app.checkbox)
+
+        next(
+            button
+            for button in app.button
+            if button.label == "Exercise information"
+        ).click().run()
+        self.assertFalse(app.exception)
+        next(
+            button
+            for button in app.button
+            if button.label == "Remove from this workout"
+        ).click().run()
+        self.assertFalse(app.exception)
+
+        self.assertEqual(
+            len(app.session_state["active_workout"]), original_exercise_count - 1
+        )
+        _, unchanged_routines = storage.load_data("dev")
+        self.assertEqual(
+            {
+                routine["id"]: len(routine["slots"])
+                for routine in unchanged_routines["routines"]
+            },
+            original_slot_counts,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,9 +4,11 @@ import random
 import unittest
 
 from workout_app.workout_logic import (
+    active_group_label,
     is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
+    remove_snapshot_slot,
     reorder_snapshot_units,
     select_slots,
     shuffle_snapshot,
@@ -99,6 +101,48 @@ class WorkoutLogicTests(unittest.TestCase):
         snapshot = new_workout_snapshot(self.routine, 1)
         snapshot[0]["completed"] = True
         self.assertNotIn("completed", self.routine["slots"][0])
+
+    def test_removing_one_snapshot_slot_preserves_other_workout_state(self) -> None:
+        snapshot = new_workout_snapshot(self.routine, 4)
+        snapshot[0].update(completed=True, weight_used="75")
+        snapshot[3]["selected_exercise_id"] = "ex-4a"
+
+        self.assertTrue(remove_snapshot_slot(snapshot, "two"))
+
+        self.assertEqual(
+            [row["slot"]["id"] for row in snapshot], ["one", "three", "four"]
+        )
+        self.assertTrue(snapshot[0]["completed"])
+        self.assertEqual(snapshot[0]["weight_used"], "75")
+        self.assertEqual(snapshot[2]["selected_exercise_id"], "ex-4a")
+        self.assertEqual([row["base_position"] for row in snapshot], [0, 1, 2])
+
+    def test_last_snapshot_slot_cannot_be_removed(self) -> None:
+        snapshot = new_workout_snapshot(self.routine, 1)
+
+        self.assertFalse(remove_snapshot_slot(snapshot, "one"))
+        self.assertEqual(len(snapshot), 1)
+
+    def test_group_label_uses_remaining_active_members(self) -> None:
+        grouped_routine = {
+            "slots": [
+                {
+                    "id": f"group-member-{index}",
+                    "order": index,
+                    "priority": 1,
+                    "default_exercise_id": f"exercise-{index}",
+                    "superset_group_id": "group-a",
+                }
+                for index in range(1, 4)
+            ]
+        }
+        snapshot = new_workout_snapshot(grouped_routine, 3)
+
+        self.assertEqual(active_group_label(len(snapshot)), "Triset")
+        self.assertTrue(remove_snapshot_slot(snapshot, "group-member-1"))
+        self.assertEqual(active_group_label(len(snapshot)), "Superset")
+        self.assertTrue(remove_snapshot_slot(snapshot, "group-member-2"))
+        self.assertIsNone(active_group_label(len(snapshot)))
 
     def test_weight_used_is_session_only_and_follows_its_exercise(self) -> None:
         snapshot = new_workout_snapshot(self.routine, 4)

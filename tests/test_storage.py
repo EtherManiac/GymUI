@@ -70,19 +70,34 @@ class ProfileStorageTests(unittest.TestCase):
                     "reps": "8",
                     "reference_weight": "50 lb",
                     "superset_group_id": None,
-                }
+                },
+                {
+                    "id": "slot-2",
+                    "order": 2,
+                    "priority": 2,
+                    "required_muscles": ["Back"],
+                    "required_tags": [],
+                    "default_exercise_id": "row",
+                    "alternative_exercise_ids": [],
+                    "sets": "3",
+                    "reps": "10",
+                    "reference_weight": "45 lb",
+                    "superset_group_id": None,
+                },
             ],
         }
         routines = {"schema_version": 1, "routines": [routine]}
-        snapshot = new_workout_snapshot(routine, 1)
+        snapshot = new_workout_snapshot(routine, 2)
         snapshot[0].update(completed=True, weight_used="55.5")
-        storage.save_workout_draft("dev", "routine-1", 1, snapshot)
+        snapshot.pop()
+        storage.save_workout_draft("dev", "routine-1", 2, snapshot)
 
         restored = storage.load_workout_draft("dev", routines)
 
         self.assertIsNotNone(restored)
         self.assertTrue(restored["snapshot"][0]["completed"])
         self.assertEqual(restored["snapshot"][0]["weight_used"], "55.5")
+        self.assertEqual(len(restored["snapshot"]), 1)
         self.assertTrue(restored["workout_session_id"])
         self.assertTrue(restored["started_at"])
 
