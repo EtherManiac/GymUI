@@ -117,6 +117,21 @@ def shuffle_snapshot(snapshot: list[dict[str, Any]], randomizer: random.Random |
         row["base_position"] = position
 
 
+def shuffle_snapshot_alternates(
+    snapshot: list[dict[str, Any]], randomizer: random.Random | None = None
+) -> None:
+    """Randomly select each slot's default or an alternate with equal odds."""
+
+    randomizer = randomizer or random.Random()
+    for row in snapshot:
+        slot = row["slot"]
+        exercise_pool = [
+            slot["default_exercise_id"],
+            *slot.get("alternative_exercise_ids", []),
+        ]
+        row["selected_exercise_id"] = randomizer.choice(exercise_pool)
+
+
 def group_slots_by_snapshot(snapshot: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
     """Group active rows by their slot's superset ID while preserving state."""
 
@@ -132,6 +147,33 @@ def group_slots_by_snapshot(snapshot: list[dict[str, Any]]) -> list[list[dict[st
             group_positions[group_id] = len(units)
             units.append([row])
     return units
+
+
+def snapshot_unit_id(unit: list[dict[str, Any]]) -> str:
+    """Return a stable ID for a single slot or a grouped workout unit."""
+
+    group_id = unit[0]["slot"].get("superset_group_id")
+    return f"group:{group_id}" if group_id else f"slot:{unit[0]['slot']['id']}"
+
+
+def reorder_snapshot_units(
+    snapshot: list[dict[str, Any]], ordered_unit_ids: list[str]
+) -> bool:
+    """Apply a complete unit order while keeping grouped exercises together."""
+
+    units = group_slots_by_snapshot(snapshot)
+    unit_by_id = {snapshot_unit_id(unit): unit for unit in units}
+    if len(ordered_unit_ids) != len(units) or set(ordered_unit_ids) != set(unit_by_id):
+        return False
+
+    reordered = [row for unit_id in ordered_unit_ids for row in unit_by_id[unit_id]]
+    changed = [row["slot"]["id"] for row in reordered] != [
+        row["slot"]["id"] for row in snapshot
+    ]
+    snapshot[:] = reordered
+    for position, row in enumerate(snapshot):
+        row["base_position"] = position
+    return changed
 
 
 def restore_snapshot_order(snapshot: list[dict[str, Any]]) -> None:

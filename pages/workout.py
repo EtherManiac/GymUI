@@ -9,14 +9,18 @@ from typing import Any
 import streamlit as st
 from st_keyup import st_keyup
 
+from workout_app.reorder_component import workout_drag_reorder
 from workout_app.ui_helpers import load_data_or_stop, render_data_portability
 from workout_app.workout_logic import (
     group_slots_by_snapshot,
     is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
+    reorder_snapshot_units,
     restore_snapshot_order,
     shuffle_snapshot,
+    shuffle_snapshot_alternates,
+    snapshot_unit_id,
 )
 
 
@@ -78,14 +82,17 @@ current_identity = (selected_routine_id, int(requested_count))
 if st.session_state.get("active_workout_identity") != current_identity:
     reset_active_workout()
 
-button_columns = st.columns(3)
+button_columns = st.columns(4)
 if button_columns[0].button("Shuffle", width="stretch"):
     shuffle_snapshot(st.session_state.active_workout)
     st.rerun()
-if button_columns[1].button("Original order", width="stretch"):
+if button_columns[1].button("Shuffle to alternates", width="stretch"):
+    shuffle_snapshot_alternates(st.session_state.active_workout)
+    st.rerun()
+if button_columns[2].button("Original order", width="stretch"):
     restore_snapshot_order(st.session_state.active_workout)
     st.rerun()
-if button_columns[2].button("Reset", width="stretch", type="secondary"):
+if button_columns[3].button("Reset", width="stretch", type="secondary"):
     reset_active_workout()
     st.rerun()
 
@@ -99,6 +106,40 @@ exercise_by_id = {
     exercise["id"]: exercise for exercise in exercise_document["exercises"]
 }
 widget_nonce = st.session_state.workout_widget_nonce
+
+
+def safe_dom_id(value: str) -> str:
+    """Return the key suffix used by workout card and drag-handle elements."""
+
+    return "".join(character if character.isalnum() else "_" for character in value)
+
+
+drag_reorder_key = f"workout_drag_reorder_{widget_nonce}"
+
+
+def apply_dragged_order() -> None:
+    """Apply a component reorder event before the workout page rerenders."""
+
+    component_state = st.session_state.get(drag_reorder_key)
+    ordered_unit_ids = getattr(component_state, "reordered", None)
+    if ordered_unit_ids is None and isinstance(component_state, dict):
+        ordered_unit_ids = component_state.get("reordered")
+    if ordered_unit_ids:
+        reorder_snapshot_units(st.session_state.active_workout, list(ordered_unit_ids))
+
+
+drag_units = [
+    {
+        "id": snapshot_unit_id(unit),
+        "slot_keys": [safe_dom_id(row["slot"]["id"]) for row in unit],
+    }
+    for unit in group_slots_by_snapshot(snapshot)
+]
+workout_drag_reorder(
+    drag_units,
+    key=drag_reorder_key,
+    on_reordered_change=apply_dragged_order,
+)
 
 
 @st.dialog("Exercise details", width="small", position="center")
@@ -255,7 +296,8 @@ st.markdown(
            exercises and grouped members remain visually aligned. */
         div[class*="st-key-workout_card_"],
         div[class*="st-key-superset_member_"] {
-            width: calc(100% - 5.5rem) !important;
+            width: calc(100% - 7.25rem) !important;
+            margin-left: 1.75rem;
             margin-bottom: -0.2rem;
         }
         div[class*="st-key-superset_member_"]::after {
@@ -347,9 +389,7 @@ def render_workout_row(
 
     slot = row["slot"]
     allowed_ids = [slot["default_exercise_id"], *slot["alternative_exercise_ids"]]
-    safe_slot_id = "".join(
-        character if character.isalnum() else "_" for character in slot["id"]
-    )
+    safe_slot_id = safe_dom_id(slot["id"])
     card_key = f"workout_card_{safe_slot_id}"
     if member_index is not None:
         position = (

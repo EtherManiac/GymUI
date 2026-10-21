@@ -7,8 +7,10 @@ from workout_app.workout_logic import (
     is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
+    reorder_snapshot_units,
     select_slots,
     shuffle_snapshot,
+    shuffle_snapshot_alternates,
 )
 
 
@@ -38,6 +40,60 @@ class WorkoutLogicTests(unittest.TestCase):
         shuffle_snapshot(snapshot, random.Random(4))
         identifiers = [row["slot"]["id"] for row in snapshot]
         self.assertEqual(abs(identifiers.index("two") - identifiers.index("three")), 1)
+
+    def test_shuffle_alternates_includes_default_with_equal_choice_pool(self) -> None:
+        class PickLast:
+            def __init__(self) -> None:
+                self.pools: list[list[str]] = []
+
+            def choice(self, options: list[str]) -> str:
+                self.pools.append(options)
+                return options[-1]
+
+        self.routine["slots"][0]["alternative_exercise_ids"] = ["ex-1a", "ex-1b"]
+        self.routine["slots"][1]["alternative_exercise_ids"] = []
+        self.routine["slots"][2]["alternative_exercise_ids"] = ["ex-3a"]
+        self.routine["slots"][3]["alternative_exercise_ids"] = ["ex-4a"]
+        snapshot = new_workout_snapshot(self.routine, 4)
+        randomizer = PickLast()
+
+        shuffle_snapshot_alternates(snapshot, randomizer)  # type: ignore[arg-type]
+
+        self.assertEqual(
+            randomizer.pools,
+            [
+                ["ex-1", "ex-1a", "ex-1b"],
+                ["ex-2"],
+                ["ex-3", "ex-3a"],
+                ["ex-4", "ex-4a"],
+            ],
+        )
+        self.assertEqual(
+            [row["selected_exercise_id"] for row in snapshot],
+            ["ex-1b", "ex-2", "ex-3a", "ex-4a"],
+        )
+
+    def test_drag_reorder_moves_group_as_one_unit(self) -> None:
+        snapshot = new_workout_snapshot(self.routine, 4)
+
+        changed = reorder_snapshot_units(
+            snapshot,
+            ["slot:four", "group:group-a", "slot:one"],
+        )
+
+        self.assertTrue(changed)
+        self.assertEqual(
+            [row["slot"]["id"] for row in snapshot],
+            ["four", "two", "three", "one"],
+        )
+        self.assertEqual([row["base_position"] for row in snapshot], [0, 1, 2, 3])
+
+    def test_drag_reorder_rejects_incomplete_unit_order(self) -> None:
+        snapshot = new_workout_snapshot(self.routine, 4)
+        original_ids = [row["slot"]["id"] for row in snapshot]
+
+        self.assertFalse(reorder_snapshot_units(snapshot, ["slot:four"]))
+        self.assertEqual([row["slot"]["id"] for row in snapshot], original_ids)
 
     def test_snapshot_does_not_modify_routine(self) -> None:
         snapshot = new_workout_snapshot(self.routine, 1)
