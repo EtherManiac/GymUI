@@ -1,4 +1,18 @@
 {
   "schema_version": 1,
-  "exercises": []
+  "exercises": [
+    {
+      "id": "b5728178-c2ee-4643-964a-c2295b89d5ca",
+      "name": "Cable Face Pull",
+      "tags": [
+        "Pull",
+        "Isolation"
+      ],
+      "notes": "Pull toward eye level and rotate the hands apart.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Rear delts"
+      ]
+    }
+  ]
 }

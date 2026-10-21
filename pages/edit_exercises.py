@@ -8,7 +8,8 @@ from uuid import uuid4
 import streamlit as st
 
 from workout_app.profile_ui import require_active_user
-from workout_app.storage import exercise_reference_locations, save_data
+from workout_app.sharing import copy_exercise_into_document
+from workout_app.storage import exercise_reference_locations, load_data, save_data
 from workout_app.ui_helpers import (
     load_data_or_stop,
     normalized_tags,
@@ -17,6 +18,7 @@ from workout_app.ui_helpers import (
 )
 from workout_app.validation import DataValidationError
 from workout_app.storage import DataLoadError
+from workout_app.users import USER_NAMES, user_name
 
 
 active_user_id = require_active_user()
@@ -44,6 +46,7 @@ st.dataframe(
 st.subheader("Exercise details")
 exercise_by_id = {exercise["id"]: exercise for exercise in exercises}
 new_exercise_option = "__new_exercise__"
+import_exercise_option = "__import_exercise__"
 
 # After creating or deleting an item, select the most useful next option on the
 # following rerun. The assignment must happen before the selectbox is created.
@@ -53,14 +56,69 @@ if pending_selection is not None:
 
 selected_id = st.selectbox(
     "Exercise",
-    options=[new_exercise_option, *exercise_by_id],
+    options=[new_exercise_option, import_exercise_option, *exercise_by_id],
     format_func=lambda exercise_id: (
-        "New exercise" if exercise_id == new_exercise_option else exercise_by_id[exercise_id]["name"]
+        "New exercise"
+        if exercise_id == new_exercise_option
+        else "Import from other user"
+        if exercise_id == import_exercise_option
+        else exercise_by_id[exercise_id]["name"]
     ),
     key="exercise_editor_selection",
 )
 is_new_exercise = selected_id == new_exercise_option
+is_importing_exercise = selected_id == import_exercise_option
 selected = exercise_by_id.get(selected_id, {})
+
+if is_importing_exercise:
+    with st.container(border=True):
+        other_user_ids = [user_id for user_id in USER_NAMES if user_id != active_user_id]
+        source_user_id = st.selectbox(
+            "Import from user",
+            options=other_user_ids,
+            format_func=user_name,
+            key="exercise_import_source_user",
+        )
+        try:
+            source_exercise_document, _ = load_data(source_user_id)
+        except (DataLoadError, DataValidationError) as error:
+            st.error("That user's exercises could not be loaded.")
+            st.code(str(error))
+            st.stop()
+
+        source_exercises = sorted(
+            source_exercise_document["exercises"],
+            key=lambda exercise: exercise["name"].casefold(),
+        )
+        if not source_exercises:
+            st.info(f"{user_name(source_user_id)} has no exercises to import yet.")
+        else:
+            source_exercise_by_id = {
+                exercise["id"]: exercise for exercise in source_exercises
+            }
+            source_exercise_id = st.selectbox(
+                "Exercise to import",
+                options=list(source_exercise_by_id),
+                format_func=lambda exercise_id: source_exercise_by_id[exercise_id]["name"],
+                key=f"exercise_import_selection_{source_user_id}",
+            )
+            if st.button("Import exercise", type="primary"):
+                imported_exercise_id = str(uuid4())
+                updated_exercises = copy_exercise_into_document(
+                    exercise_document,
+                    source_exercise_by_id[source_exercise_id],
+                    imported_exercise_id,
+                )
+                try:
+                    save_data(active_user_id, updated_exercises, routine_document)
+                except (DataLoadError, DataValidationError) as error:
+                    show_save_error(error)
+                else:
+                    st.session_state.exercise_editor_pending_selection = (
+                        imported_exercise_id
+                    )
+                    st.rerun()
+    st.stop()
 
 # Creation and editing intentionally share one form so the page stays compact
 # and every exercise field behaves consistently in both modes.

@@ -11,6 +11,7 @@ The included Push 1, Pull 1, and Legs routines are fictional sample data. Replac
 - Explicit exercise alternatives per routine slot
 - Supersets that remain adjacent during selection and shuffling
 - Exercise library and routine editors with stable IDs
+- Independent exercise importing between user profiles
 - Validated, human-readable JSON storage
 - Single-file backup download and restore
 - Lightweight Tyler, Mia, and Dev profiles without authentication or credentials
