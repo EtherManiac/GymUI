@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import streamlit as st
 
+from workout_app.profile_ui import require_active_user
 from workout_app.storage import exercise_reference_locations, save_data
 from workout_app.ui_helpers import (
     load_data_or_stop,
@@ -18,8 +19,9 @@ from workout_app.validation import DataValidationError
 from workout_app.storage import DataLoadError
 
 
-exercise_document, routine_document = load_data_or_stop()
-render_data_portability(exercise_document, routine_document)
+active_user_id = require_active_user()
+exercise_document, routine_document = load_data_or_stop(active_user_id)
+render_data_portability(active_user_id, exercise_document, routine_document)
 
 st.title("Edit exercises")
 st.caption("Exercises are reusable. Sets, reps, and weight are configured in routine slots.")
@@ -119,7 +121,7 @@ if save_submitted:
                 demo_url=edited_demo_url.strip(),
             )
         try:
-            save_data(updated_exercises, routine_document)
+            save_data(active_user_id, updated_exercises, routine_document)
         except (DataLoadError, DataValidationError) as error:
             show_save_error(error)
         else:
@@ -139,7 +141,7 @@ if not is_new_exercise:
                 exercise for exercise in updated_exercises["exercises"] if exercise["id"] != selected_id
             ]
             try:
-                save_data(updated_exercises, routine_document)
+                save_data(active_user_id, updated_exercises, routine_document)
             except (DataLoadError, DataValidationError) as error:
                 show_save_error(error)
             else:

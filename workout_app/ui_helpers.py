@@ -16,11 +16,11 @@ from workout_app.storage import (
 from workout_app.validation import DataValidationError
 
 
-def load_data_or_stop() -> tuple[dict[str, Any], dict[str, Any]]:
+def load_data_or_stop(user_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     """Load application data or stop the page with useful recovery guidance."""
 
     try:
-        return load_data()
+        return load_data(user_id)
     except (DataLoadError, DataValidationError) as error:
         st.error("The workout data could not be loaded.")
         st.code(str(error))
@@ -36,7 +36,9 @@ def show_save_error(error: Exception) -> None:
 
 
 def render_data_portability(
-    exercise_document: dict[str, Any], routine_document: dict[str, Any]
+    user_id: str,
+    exercise_document: dict[str, Any],
+    routine_document: dict[str, Any],
 ) -> None:
     """Render backup import/export controls in the sidebar.
 
@@ -50,12 +52,12 @@ def render_data_portability(
         st.download_button(
             "Download backup",
             data=data_bundle_json(exercise_document, routine_document),
-            file_name="workout_planner_backup.json",
+            file_name=f"workout_planner_{user_id}_backup.json",
             mime="application/json",
             width="stretch",
         )
         uploaded_backup = st.file_uploader(
-            "Restore a backup", type=["json"], key="shared_backup_uploader"
+            "Restore a backup", type=["json"], key=f"backup_uploader_{user_id}"
         )
         if st.button(
             "Import and replace data",
@@ -64,7 +66,7 @@ def render_data_portability(
         ):
             try:
                 imported_exercises, imported_routines = parse_data_bundle(uploaded_backup.getvalue())
-                save_data(imported_exercises, imported_routines)
+                save_data(user_id, imported_exercises, imported_routines)
             except (DataLoadError, DataValidationError) as error:
                 show_save_error(error)
             else:

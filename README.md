@@ -6,14 +6,14 @@ The included Push 1, Pull 1, and Legs routines are fictional sample data. Replac
 
 ## Features
 
-- Mobile-friendly workout checklist with session-only completion state
+- Mobile-friendly workout checklist with short-lived workout recovery
 - Completed exercises move below active work; supersets move only when every member is complete
 - Explicit exercise alternatives per routine slot
 - Supersets that remain adjacent during selection and shuffling
 - Exercise library and routine editors with stable IDs
 - Validated, human-readable JSON storage
 - Single-file backup download and restore
-- No database, accounts, credentials, or external API
+- Lightweight Tyler, Mia, and Dev profiles without authentication or credentials
 
 ## Local setup
 
@@ -47,7 +47,9 @@ python -m unittest discover -s tests -v
 
 ## Data model
 
-Data is separated from UI code in `data/exercises.json` and `data/routines.json`. Both documents use `schema_version: 1`.
+Each profile has independent `exercises.json` and `routines.json` files under
+`data/users/<user-id>/`. Both documents use `schema_version: 1`. The bundled
+sample data belongs to Dev; Tyler and Mia begin with empty libraries.
 
 An exercise contains:
 
@@ -76,7 +78,11 @@ The app treats every grouped set as one indivisible unit with one shared priorit
 
 ## Saving and backups
 
-Editor changes are validated and then written to the two local JSON files using atomic file replacement. Checklist completion, substitutions, and shuffled order live only in the current Streamlit session and are never written to the routine.
+Editor changes are validated and then written to the selected profile's two
+local JSON files using atomic file replacement. In-progress workout state is
+stored separately in `active_workout.json` for up to 12 hours so checked items,
+weights, substitutions, and order can be recovered after a session ends. This
+draft never modifies the saved routine.
 
 In the sidebar, **Data backup** downloads both JSON documents as one portable backup. Import validates the entire backup before replacing local data.
 
@@ -101,7 +107,7 @@ workout_app/storage.py       JSON loading, atomic saves, and backup handling
 workout_app/validation.py    Schema and cross-reference checks
 workout_app/workout_logic.py Pure selection, grouping, and shuffle behavior
 workout_app/ui_helpers.py    Shared Streamlit controls
-data/                        Sample exercise and routine JSON
+data/users/                  Per-profile exercise, routine, and temporary draft JSON
 tests/                       Standard-library unit tests
 PROJECT_REQUIREMENTS.md      Original project brief
 ```

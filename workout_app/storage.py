@@ -10,17 +10,20 @@ import json
 import os
 import tempfile
 from copy import deepcopy
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from workout_app.migrations import migrate_documents
+from workout_app.users import user_name
 from workout_app.validation import DataValidationError, validate_all
+from workout_app.workout_logic import is_valid_weight_input, new_workout_snapshot
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIRECTORY = PROJECT_ROOT / "data"
-EXERCISES_PATH = DATA_DIRECTORY / "exercises.json"
-ROUTINES_PATH = DATA_DIRECTORY / "routines.json"
+USER_DATA_DIRECTORY = DATA_DIRECTORY / "users"
+WORKOUT_DRAFT_LIFETIME = timedelta(hours=12)
 
 
 class DataLoadError(RuntimeError):
@@ -47,11 +50,24 @@ def _read_json(path: Path) -> dict[str, Any]:
     return document
 
 
-def load_data() -> tuple[dict[str, Any], dict[str, Any]]:
+def _user_directory(user_id: str) -> Path:
+    """Return the data directory for a known hard-coded profile."""
+
+    user_name(user_id)
+    return USER_DATA_DIRECTORY / user_id
+
+
+def _user_data_paths(user_id: str) -> tuple[Path, Path]:
+    directory = _user_directory(user_id)
+    return directory / "exercises.json", directory / "routines.json"
+
+
+def load_data(user_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     """Load and validate both data files before returning independent objects."""
 
-    exercise_document = _read_json(EXERCISES_PATH)
-    routine_document = _read_json(ROUTINES_PATH)
+    exercises_path, routines_path = _user_data_paths(user_id)
+    exercise_document = _read_json(exercises_path)
+    routine_document = _read_json(routines_path)
     exercise_document, routine_document = migrate_documents(
         exercise_document, routine_document
     )
@@ -79,12 +95,135 @@ def _atomic_write_json(path: Path, document: dict[str, Any]) -> None:
             os.unlink(temporary_path)
 
 
-def save_data(exercise_document: dict[str, Any], routine_document: dict[str, Any]) -> None:
+def save_data(
+    user_id: str,
+    exercise_document: dict[str, Any],
+    routine_document: dict[str, Any],
+) -> None:
     """Validate the complete model, then persist both JSON documents."""
 
     validate_all(exercise_document, routine_document)
-    _atomic_write_json(EXERCISES_PATH, exercise_document)
-    _atomic_write_json(ROUTINES_PATH, routine_document)
+    exercises_path, routines_path = _user_data_paths(user_id)
+
+    # This app assumes very low write concurrency. Two devices editing the
+    # same profile simultaneously can still overwrite one another's changes.
+    # Add file locking or transactional storage if that usage becomes common.
+    _atomic_write_json(exercises_path, exercise_document)
+    _atomic_write_json(routines_path, routine_document)
+
+
+def _draft_path(user_id: str) -> Path:
+    return _user_directory(user_id) / "active_workout.json"
+
+
+def save_workout_draft(
+    user_id: str,
+    routine_id: str,
+    requested_count: int,
+    snapshot: list[dict[str, Any]],
+) -> None:
+    """Persist the recoverable parts of an in-progress workout."""
+
+    document = {
+        "draft_version": 1,
+        "saved_at": datetime.now(UTC).isoformat(),
+        "routine_id": routine_id,
+        "requested_count": requested_count,
+        "rows": [
+            {
+                "slot_id": row["slot"]["id"],
+                "selected_exercise_id": row["selected_exercise_id"],
+                "completed": bool(row["completed"]),
+                "weight_used": str(row.get("weight_used", "")),
+                "base_position": int(row.get("base_position", position)),
+            }
+            for position, row in enumerate(snapshot)
+        ],
+    }
+    _atomic_write_json(_draft_path(user_id), document)
+
+
+def delete_workout_draft(user_id: str) -> None:
+    """Remove a saved workout draft when reset, declined, or expired."""
+
+    try:
+        _draft_path(user_id).unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as error:
+        raise DataLoadError(f"Could not remove the saved workout: {error}") from error
+
+
+def load_workout_draft(
+    user_id: str,
+    routine_document: dict[str, Any],
+    *,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """Return a recent, internally consistent workout draft if one exists."""
+
+    path = _draft_path(user_id)
+    if not path.exists():
+        return None
+    try:
+        document = _read_json(path)
+        saved_at = datetime.fromisoformat(str(document["saved_at"]))
+        if saved_at.tzinfo is None:
+            saved_at = saved_at.replace(tzinfo=UTC)
+        current_time = now or datetime.now(UTC)
+        if current_time - saved_at > WORKOUT_DRAFT_LIFETIME:
+            delete_workout_draft(user_id)
+            return None
+
+        if document.get("draft_version") != 1:
+            return None
+        routine_id = str(document["routine_id"])
+        requested_count = int(document["requested_count"])
+        routine = next(
+            routine
+            for routine in routine_document["routines"]
+            if routine["id"] == routine_id
+        )
+        if not 1 <= requested_count <= len(routine["slots"]):
+            return None
+
+        clean_snapshot = new_workout_snapshot(routine, requested_count)
+        rows = document["rows"]
+        if not isinstance(rows, list) or len(rows) != len(clean_snapshot):
+            return None
+        saved_by_slot = {row["slot_id"]: row for row in rows}
+        if set(saved_by_slot) != {row["slot"]["id"] for row in clean_snapshot}:
+            return None
+
+        restored: list[dict[str, Any]] = []
+        snapshot_by_slot = {row["slot"]["id"]: row for row in clean_snapshot}
+        for saved_row in rows:
+            row = snapshot_by_slot[saved_row["slot_id"]]
+            allowed_ids = {
+                row["slot"]["default_exercise_id"],
+                *row["slot"].get("alternative_exercise_ids", []),
+            }
+            selected_id = str(saved_row["selected_exercise_id"])
+            weight_used = str(saved_row.get("weight_used", ""))
+            if selected_id not in allowed_ids or not is_valid_weight_input(weight_used):
+                return None
+            row.update(
+                selected_exercise_id=selected_id,
+                completed=bool(saved_row.get("completed", False)),
+                weight_used=weight_used,
+                base_position=int(saved_row.get("base_position", len(restored))),
+            )
+            restored.append(row)
+
+        return {
+            "saved_at": saved_at,
+            "routine_id": routine_id,
+            "routine_name": routine["name"],
+            "requested_count": requested_count,
+            "snapshot": restored,
+        }
+    except (DataLoadError, KeyError, TypeError, ValueError, StopIteration):
+        return None
 
 
 def data_bundle_json(exercise_document: dict[str, Any], routine_document: dict[str, Any]) -> str:

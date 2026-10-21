@@ -9,7 +9,14 @@ from typing import Any
 import streamlit as st
 from st_keyup import st_keyup
 
+from workout_app.profile_ui import require_active_user
 from workout_app.reorder_component import workout_drag_reorder
+from workout_app.storage import (
+    DataLoadError,
+    delete_workout_draft,
+    load_workout_draft,
+    save_workout_draft,
+)
 from workout_app.ui_helpers import load_data_or_stop, render_data_portability
 from workout_app.workout_logic import (
     group_slots_by_snapshot,
@@ -24,8 +31,9 @@ from workout_app.workout_logic import (
 )
 
 
-exercise_document, routine_document = load_data_or_stop()
-render_data_portability(exercise_document, routine_document)
+active_user_id = require_active_user()
+exercise_document, routine_document = load_data_or_stop(active_user_id)
+render_data_portability(active_user_id, exercise_document, routine_document)
 
 st.title("Workout")
 st.caption("Choose a routine, adjust its length, and work through the checklist.")
@@ -45,58 +53,148 @@ default_routine_index = next(
     ),
     0,
 )
-selected_routine_id = st.selectbox(
-    "Select workout",
-    options=routine_ids,
-    index=default_routine_index,
-    format_func=lambda routine_id: routine_by_id[routine_id]["name"],
-)
+
+saved_draft = load_workout_draft(active_user_id, routine_document)
+if saved_draft and not st.session_state.get("workout_draft_handled", False):
+    completed_in_draft = sum(
+        row["completed"] for row in saved_draft["snapshot"]
+    )
+    total_in_draft = len(saved_draft["snapshot"])
+    st.info(
+        f"Resume {saved_draft['routine_name']}? "
+        f"{completed_in_draft} of {total_in_draft} exercises were completed."
+    )
+    resume_column, fresh_column = st.columns(2)
+    if resume_column.button("Resume workout", type="primary", width="stretch"):
+        routine_id = saved_draft["routine_id"]
+        requested = saved_draft["requested_count"]
+        st.session_state.workout_routine_id = routine_id
+        st.session_state[f"workout_requested_count_{routine_id}"] = requested
+        st.session_state.active_workout = saved_draft["snapshot"]
+        st.session_state.active_workout_identity = (
+            active_user_id,
+            routine_id,
+            requested,
+        )
+        st.session_state.workout_widget_nonce = (
+            st.session_state.get("workout_widget_nonce", 0) + 1
+        )
+        st.session_state.workout_draft_handled = True
+        st.rerun()
+    if fresh_column.button("Start fresh", width="stretch"):
+        delete_workout_draft(active_user_id)
+        st.session_state.workout_draft_handled = True
+        st.rerun()
+    st.stop()
+
+if st.session_state.get("workout_routine_id") not in (None, *routine_ids):
+    del st.session_state["workout_routine_id"]
+routine_selectbox_arguments: dict[str, Any] = {
+    "label": "Select workout",
+    "options": routine_ids,
+    "format_func": lambda routine_id: routine_by_id[routine_id]["name"],
+    "key": "workout_routine_id",
+}
+if "workout_routine_id" not in st.session_state:
+    routine_selectbox_arguments["index"] = default_routine_index
+selected_routine_id = st.selectbox(**routine_selectbox_arguments)
 selected_routine = routine_by_id[selected_routine_id]
 slot_count = len(selected_routine["slots"])
 if slot_count == 0:
     st.info("This routine has no exercise slots yet.")
     st.stop()
 
-requested_count = st.number_input(
-    "Number of exercises",
-    min_value=1,
-    max_value=slot_count,
-    value=slot_count,
-    step=1,
-    help=(
+requested_count_key = f"workout_requested_count_{selected_routine_id}"
+number_input_arguments: dict[str, Any] = {
+    "label": "Number of exercises",
+    "min_value": 1,
+    "max_value": slot_count,
+    "step": 1,
+    "help": (
         "Higher-priority items are kept first. Supersets stay together, so the "
         "displayed total can be below this target."
     ),
-)
+    "key": requested_count_key,
+}
+if requested_count_key not in st.session_state:
+    number_input_arguments["value"] = slot_count
+requested_count = st.number_input(**number_input_arguments)
 
 
 def reset_active_workout() -> None:
     """Build a clean snapshot and invalidate prior widget state via a nonce."""
 
     st.session_state.active_workout = new_workout_snapshot(selected_routine, int(requested_count))
-    st.session_state.active_workout_identity = (selected_routine_id, int(requested_count))
+    st.session_state.active_workout_identity = (
+        active_user_id,
+        selected_routine_id,
+        int(requested_count),
+    )
     st.session_state.workout_widget_nonce = st.session_state.get("workout_widget_nonce", 0) + 1
+    delete_workout_draft(active_user_id)
 
 
-current_identity = (selected_routine_id, int(requested_count))
+current_identity = (active_user_id, selected_routine_id, int(requested_count))
 if st.session_state.get("active_workout_identity") != current_identity:
     reset_active_workout()
+
+snapshot: list[dict[str, Any]] = st.session_state.active_workout
+
+
+def workout_has_progress() -> bool:
+    """Avoid creating a recovery prompt for an untouched default workout."""
+
+    natural_order = [
+        row["slot"]["id"] for row in sorted(snapshot, key=lambda row: row["slot"]["order"])
+    ]
+    base_order = [
+        row["slot"]["id"] for row in sorted(snapshot, key=lambda row: row["base_position"])
+    ]
+    return (
+        int(requested_count) != slot_count
+        or natural_order != base_order
+        or any(
+            row["completed"]
+            or row.get("weight_used", "")
+            or row["selected_exercise_id"] != row["slot"]["default_exercise_id"]
+            for row in snapshot
+        )
+    )
+
+
+def sync_workout_draft() -> None:
+    """Write current progress, or remove the draft when no progress remains."""
+
+    try:
+        if workout_has_progress():
+            save_workout_draft(
+                active_user_id,
+                selected_routine_id,
+                int(requested_count),
+                snapshot,
+            )
+        else:
+            delete_workout_draft(active_user_id)
+    except DataLoadError as error:
+        st.warning(f"Workout recovery could not be updated: {error}")
 
 button_columns = st.columns(4)
 if button_columns[0].button("Shuffle", width="stretch"):
     shuffle_snapshot(st.session_state.active_workout)
+    sync_workout_draft()
     st.rerun()
 if button_columns[1].button("Shuffle to alternates", width="stretch"):
     shuffle_snapshot_alternates(st.session_state.active_workout)
+    sync_workout_draft()
     st.rerun()
 if button_columns[2].button("Original order", width="stretch"):
     restore_snapshot_order(st.session_state.active_workout)
+    sync_workout_draft()
     st.rerun()
 if button_columns[3].button("Reset", width="stretch", type="secondary"):
     reset_active_workout()
     st.rerun()
 
-snapshot: list[dict[str, Any]] = st.session_state.active_workout
 if len(snapshot) < int(requested_count):
     st.caption(
         f"Showing {len(snapshot)} exercises. A superset that would exceed your target was kept intact and skipped."
@@ -126,6 +224,7 @@ def apply_dragged_order() -> None:
         ordered_unit_ids = component_state.get("reordered")
     if ordered_unit_ids:
         reorder_snapshot_units(st.session_state.active_workout, list(ordered_unit_ids))
+        sync_workout_draft()
 
 
 drag_units = [
@@ -481,6 +580,7 @@ def render_workout_row(
                             width="stretch",
                         ):
                             row["selected_exercise_id"] = exercise_id
+                            sync_workout_draft()
                             st.rerun()
 
         st.markdown(
@@ -522,7 +622,9 @@ for unit in group_slots_by_snapshot(snapshot):
 completed_count = sum(row["completed"] for row in snapshot)
 # Re-render only when completion changed the unit order. Widget keys are based
 # on stable slot IDs, so checkbox and substitution state follows each row.
-if move_completed_units_to_end(snapshot):
+did_reorder_completed = move_completed_units_to_end(snapshot)
+sync_workout_draft()
+if did_reorder_completed:
     st.rerun()
 st.progress(completed_count / len(snapshot), text=f"{completed_count} of {len(snapshot)} complete")
 

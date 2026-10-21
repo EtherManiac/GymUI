@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import streamlit as st
 
+from workout_app.profile_ui import require_active_user
 from workout_app.storage import DataLoadError, save_data
 from workout_app.ui_helpers import (
     all_muscles,
@@ -21,8 +22,9 @@ from workout_app.validation import DataValidationError
 from workout_app.workout_logic import group_slots, ordered_slots
 
 
-exercise_document, routine_document = load_data_or_stop()
-render_data_portability(exercise_document, routine_document)
+active_user_id = require_active_user()
+exercise_document, routine_document = load_data_or_stop(active_user_id)
+render_data_portability(active_user_id, exercise_document, routine_document)
 
 st.title("Edit routines")
 st.caption("Add a single exercise or build and edit a complete superset in one place.")
@@ -32,7 +34,7 @@ def persist(updated_routines: dict[str, Any]) -> bool:
     """Save routine edits and show consistent feedback to the user."""
 
     try:
-        save_data(exercise_document, updated_routines)
+        save_data(active_user_id, exercise_document, updated_routines)
     except (DataLoadError, DataValidationError) as error:
         show_save_error(error)
         return False
