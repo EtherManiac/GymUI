@@ -135,6 +135,12 @@ st.markdown(
     div[class*="st-key-superset_member_middle_"]::after {
         top: -0.65rem;
         bottom: -0.65rem;
+        /* Every middle member gets its own horizontal connection to the
+           shared vertical rail, not just the first and last cards. */
+        background: linear-gradient(
+            var(--workout-progress-blue),
+            var(--workout-progress-blue)
+        ) left center / 100% 4px no-repeat;
     }
     div[class*="st-key-superset_member_last_"]::after {
         top: -0.65rem;
@@ -185,10 +191,12 @@ st.markdown(
             padding-left: 0.75rem;
             padding-right: 0.75rem;
         }
-        /* Reserve a slim lane for grouped-set notation. This keeps the
-           desktop bracket relationship while preventing horizontal scroll. */
+        /* Every card uses the same width. The shared empty lane means regular
+           exercises and grouped members remain visually aligned. */
+        div[class*="st-key-workout_card_"],
         div[class*="st-key-superset_member_"] {
             width: calc(100% - 5.5rem) !important;
+            margin-bottom: -0.35rem;
         }
         div[class*="st-key-superset_member_"]::after {
             right: -1.35rem;
@@ -201,8 +209,31 @@ st.markdown(
         }
         div[class*="st-key-workout_card_"] [data-testid="stVerticalBlockBorderWrapper"],
         div[class*="st-key-superset_member_"] [data-testid="stVerticalBlockBorderWrapper"] {
-            padding-left: 0.65rem;
-            padding-right: 0.65rem;
+            padding: 0.6rem 0.65rem !important;
+        }
+        div[class*="st-key-workout_card_"] [data-testid="stVerticalBlock"],
+        div[class*="st-key-superset_member_"] [data-testid="stVerticalBlock"] {
+            gap: 0.4rem;
+        }
+        div[class*="st-key-workout_card_"] h3,
+        div[class*="st-key-superset_member_"] h3 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.05rem !important;
+            line-height: 1.2;
+        }
+        div[class*="st-key-workout_card_"] p,
+        div[class*="st-key-superset_member_"] p {
+            margin-top: 0.1rem;
+            margin-bottom: 0.1rem;
+            font-size: 0.82rem;
+            line-height: 1.25;
+        }
+        div[class*="st-key-workout_card_"] button,
+        div[class*="st-key-superset_member_"] button {
+            min-height: 2rem;
+            padding: 0.25rem 0.4rem;
+            font-size: 0.78rem;
         }
     }
     </style>
