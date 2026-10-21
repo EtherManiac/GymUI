@@ -3,8 +3,18 @@
 from __future__ import annotations
 
 import random
+import re
 from copy import deepcopy
 from typing import Any
+
+
+_WEIGHT_INPUT_PATTERN = re.compile(r"(?:\d+(?:\.\d*)?|\.\d+)")
+
+
+def is_valid_weight_input(value: str) -> bool:
+    """Accept an empty optional weight or a positive integer/decimal string."""
+
+    return value == "" or _WEIGHT_INPUT_PATTERN.fullmatch(value) is not None
 
 
 def ordered_slots(routine: dict[str, Any]) -> list[dict[str, Any]]:

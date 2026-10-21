@@ -4,6 +4,7 @@ import random
 import unittest
 
 from workout_app.workout_logic import (
+    is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
     select_slots,
@@ -50,6 +51,12 @@ class WorkoutLogicTests(unittest.TestCase):
         move_completed_units_to_end(snapshot)
         self.assertEqual(snapshot[-1]["weight_used"], "75 lb")
         self.assertNotIn("weight_used", self.routine["slots"][0])
+
+    def test_weight_input_accepts_only_optional_positive_numbers(self) -> None:
+        for value in ("", "0", "75", "75.5", ".5", "75."):
+            self.assertTrue(is_valid_weight_input(value), value)
+        for value in ("75 lb", "1.2.3", "-5", ".", " 75"):
+            self.assertFalse(is_valid_weight_input(value), value)
 
     def test_priority_is_independent_from_display_order(self) -> None:
         self.routine["slots"][0]["priority"] = 4

@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Any
 
 import streamlit as st
+from st_keyup import st_keyup
 
 from workout_app.ui_helpers import load_data_or_stop, render_data_portability
 from workout_app.workout_logic import (
     group_slots_by_snapshot,
+    is_valid_weight_input,
     move_completed_units_to_end,
     new_workout_snapshot,
     restore_snapshot_order,
@@ -191,6 +193,12 @@ st.markdown(
         display: block;
         margin-top: 0.1rem;
     }
+    .weight-validation-warning {
+        margin: 0.15rem 0 0;
+        color: #b45309;
+        font-size: 0.75rem;
+        line-height: 1.25;
+    }
     /* Streamlit adds an anchor-link icon to Markdown headings. Exercise names
        are labels, not page sections, so that icon should never be shown. */
     div[class*="st-key-exercise_header_"] h3 a,
@@ -330,6 +338,23 @@ def render_workout_row(
 
     with st.container(border=True, key=card_key):
         selected_exercise_id = row["selected_exercise_id"]
+        weight_key = f"weight_used_{widget_nonce}_{slot['id']}"
+        current_weight = str(
+            st.session_state.get(weight_key, row.get("weight_used", ""))
+        )
+        weight_is_valid = is_valid_weight_input(current_weight)
+        done_key = f"done_{widget_nonce}_{slot['id']}"
+
+        # Never allow a checked item with malformed weight data. This repairs
+        # stale/hot-reloaded sessions that would otherwise leave the weight
+        # field disabled before the user can correct it.
+        is_currently_checked = bool(
+            st.session_state.get(done_key, row["completed"])
+        )
+        if is_currently_checked and not weight_is_valid:
+            row["completed"] = False
+            st.session_state[done_key] = False
+
         with st.container(key=f"exercise_header_{safe_slot_id}"):
             checkbox_column, name_column, swap_column = st.columns(
                 [0.35, 5.65, 1.3], vertical_alignment="center"
@@ -337,8 +362,9 @@ def render_workout_row(
             completed = checkbox_column.checkbox(
                 "Done",
                 value=row["completed"],
-                key=f"done_{widget_nonce}_{slot['id']}",
+                key=done_key,
                 label_visibility="collapsed",
+                disabled=not weight_is_valid,
             )
             row["completed"] = completed
 
@@ -373,8 +399,6 @@ def render_workout_row(
                         row["selected_exercise_id"] = exercise_id
                         st.rerun()
 
-        if completed:
-            st.caption("✅ Completed")
         st.markdown(
             '<div class="workout-prescription">'
             f"<strong>{escape(str(slot['sets']))} × {escape(str(slot['reps']))}</strong>"
@@ -384,13 +408,23 @@ def render_workout_row(
             "</div>",
             unsafe_allow_html=True,
         )
-        row["weight_used"] = st.text_input(
+        entered_weight = st_keyup(
             "Weight used (optional)",
             value=row.get("weight_used", ""),
             placeholder="Weight used (optional)",
-            key=f"weight_used_{widget_nonce}_{slot['id']}",
+            key=weight_key,
             label_visibility="collapsed",
+            disabled=completed,
         )
+        if is_valid_weight_input(entered_weight):
+            row["weight_used"] = entered_weight
+        else:
+            st.markdown(
+                '<p class="weight-validation-warning">'
+                "Enter numbers with at most one decimal point."
+                "</p>",
+                unsafe_allow_html=True,
+            )
 
 
 for unit in group_slots_by_snapshot(snapshot):
