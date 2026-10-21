@@ -10,7 +10,7 @@ import json
 import os
 import tempfile
 from copy import deepcopy
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIRECTORY = PROJECT_ROOT / "data"
 USER_DATA_DIRECTORY = DATA_DIRECTORY / "users"
 WORKOUT_DRAFT_LIFETIME = timedelta(hours=12)
+UTC_TIMEZONE = timezone.utc
 
 
 class DataLoadError(RuntimeError):
@@ -126,7 +127,7 @@ def save_workout_draft(
 
     document = {
         "draft_version": 1,
-        "saved_at": datetime.now(UTC).isoformat(),
+        "saved_at": datetime.now(UTC_TIMEZONE).isoformat(),
         "routine_id": routine_id,
         "requested_count": requested_count,
         "rows": [
@@ -169,8 +170,8 @@ def load_workout_draft(
         document = _read_json(path)
         saved_at = datetime.fromisoformat(str(document["saved_at"]))
         if saved_at.tzinfo is None:
-            saved_at = saved_at.replace(tzinfo=UTC)
-        current_time = now or datetime.now(UTC)
+            saved_at = saved_at.replace(tzinfo=UTC_TIMEZONE)
+        current_time = now or datetime.now(UTC_TIMEZONE)
         if current_time - saved_at > WORKOUT_DRAFT_LIFETIME:
             delete_workout_draft(user_id)
             return None

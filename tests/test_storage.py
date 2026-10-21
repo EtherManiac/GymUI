@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -84,7 +84,7 @@ class ProfileStorageTests(unittest.TestCase):
         expired = storage.load_workout_draft(
             "dev",
             routines,
-            now=datetime.now(UTC) + timedelta(hours=13),
+            now=datetime.now(timezone.utc) + timedelta(hours=13),
         )
         self.assertIsNone(expired)
         self.assertFalse((Path(self.temporary_directory.name) / "dev" / "active_workout.json").exists())
