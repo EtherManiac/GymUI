@@ -360,12 +360,6 @@ st.markdown(
         font-size: 0.75rem;
         line-height: 1.25;
     }
-    /* Exercise names are labels, not page sections, so suppress the anchor
-       that Streamlit normally adds to Markdown headings. */
-    div[class*="st-key-exercise_header_"] h3 a,
-    div[class*="st-key-exercise_header_"] [data-testid="stHeaderActionElements"] {
-        display: none !important;
-    }
     /* Keep the accessible label while showing only the requested info icon. */
     div[class*="st-key-details_"] button p {
         display: none;

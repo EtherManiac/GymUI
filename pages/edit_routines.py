@@ -9,7 +9,8 @@ from uuid import uuid4
 import streamlit as st
 
 from workout_app.profile_ui import require_active_user
-from workout_app.storage import DataLoadError, save_data
+from workout_app.sharing import copy_routine_into_documents, missing_routine_exercises
+from workout_app.storage import DataLoadError, load_data, save_data
 from workout_app.ui_helpers import (
     all_muscles,
     all_tags,
@@ -20,6 +21,7 @@ from workout_app.ui_helpers import (
 )
 from workout_app.validation import DataValidationError
 from workout_app.workout_logic import group_slots, ordered_slots
+from workout_app.users import USER_NAMES, user_name
 
 
 active_user_id = require_active_user()
@@ -44,6 +46,7 @@ def persist(updated_routines: dict[str, Any]) -> bool:
 routines = sorted(routine_document["routines"], key=lambda routine: routine["name"].casefold())
 routine_by_id = {routine["id"]: routine for routine in routines}
 new_routine_option = "__new_routine__"
+import_routine_option = "__import_routine__"
 
 # Apply post-save selection before constructing the widget. This lets a newly
 # created routine open immediately without mutating an instantiated selectbox.
@@ -54,14 +57,106 @@ if pending_selection is not None:
 st.subheader("Routine details")
 selected_routine_id = st.selectbox(
     "Routine",
-    options=[new_routine_option, *routine_by_id],
+    options=[new_routine_option, import_routine_option, *routine_by_id],
     format_func=lambda routine_id: (
-        "New routine" if routine_id == new_routine_option else routine_by_id[routine_id]["name"]
+        "New routine"
+        if routine_id == new_routine_option
+        else "Import from other user"
+        if routine_id == import_routine_option
+        else routine_by_id[routine_id]["name"]
     ),
     key="routine_editor_selection",
 )
 is_new_routine = selected_routine_id == new_routine_option
+is_importing_routine = selected_routine_id == import_routine_option
 selected_routine = routine_by_id.get(selected_routine_id)
+
+if is_importing_routine:
+    with st.container(border=True):
+        other_user_ids = [user_id for user_id in USER_NAMES if user_id != active_user_id]
+        source_user_id = st.selectbox(
+            "Import from user",
+            options=other_user_ids,
+            format_func=user_name,
+            key="routine_import_source_user",
+        )
+        try:
+            source_exercise_document, source_routine_document = load_data(source_user_id)
+        except (DataLoadError, DataValidationError) as error:
+            st.error("That user's routines could not be loaded.")
+            st.code(str(error))
+            st.stop()
+
+        source_routines = sorted(
+            source_routine_document["routines"],
+            key=lambda routine: routine["name"].casefold(),
+        )
+        if not source_routines:
+            st.info(f"{user_name(source_user_id)} has no routines to import yet.")
+        else:
+            source_routine_by_id = {
+                routine["id"]: routine for routine in source_routines
+            }
+            source_routine_id = st.selectbox(
+                "Routine to import",
+                options=list(source_routine_by_id),
+                format_func=lambda routine_id: source_routine_by_id[routine_id]["name"],
+                key=f"routine_import_selection_{source_user_id}",
+            )
+            source_routine = source_routine_by_id[source_routine_id]
+            missing_exercises = missing_routine_exercises(
+                exercise_document,
+                source_exercise_document,
+                source_routine,
+            )
+
+            if missing_exercises:
+                st.warning(
+                    "This routine needs exercises that are not exact matches for "
+                    "exercises in your profile. Import all of them to continue:"
+                )
+                for exercise in missing_exercises:
+                    st.write(f"- {exercise['name']}")
+                import_label = "Import routine and missing exercises"
+            else:
+                st.info(
+                    "Every exercise in this routine already has an exact match in "
+                    "your profile."
+                )
+                import_label = "Import routine"
+
+            action_columns = st.columns(2)
+            if action_columns[0].button(
+                import_label,
+                type="primary",
+                width="stretch",
+            ):
+                updated_exercises, updated_routines, imported_routine_id = (
+                    copy_routine_into_documents(
+                        exercise_document,
+                        routine_document,
+                        source_exercise_document,
+                        source_routine,
+                        lambda: str(uuid4()),
+                    )
+                )
+                try:
+                    save_data(active_user_id, updated_exercises, updated_routines)
+                except (DataLoadError, DataValidationError) as error:
+                    show_save_error(error)
+                else:
+                    st.session_state.routine_editor_pending_selection = (
+                        imported_routine_id
+                    )
+                    st.rerun()
+
+            if missing_exercises and action_columns[1].button(
+                "Cancel",
+                width="stretch",
+            ):
+                st.session_state.routine_editor_pending_selection = new_routine_option
+                st.rerun()
+    st.stop()
 
 # The same small form creates a routine or renames the selected routine.
 with st.form(f"routine_details_{selected_routine_id}", clear_on_submit=is_new_routine):

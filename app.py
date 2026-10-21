@@ -14,6 +14,18 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# Streamlit adds permalink controls to headings by default. Keep headings as
+# plain labels throughout every current and future page in this application.
+st.html(
+    """
+    <style>
+    [data-testid="stHeaderActionElements"] {
+        display: none !important;
+    }
+    </style>
+    """
+)
+
 # Profiles are intentionally lightweight selectors rather than authentication
 # or privacy boundaries. Hiding navigation makes selection a hard app gate.
 if (

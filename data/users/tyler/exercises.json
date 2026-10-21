@@ -13,6 +13,110 @@
       "muscles_targeted": [
         "Rear delts"
       ]
+    },
+    {
+      "id": "9f6ad790-d89b-42d2-8da7-661bdf8562ff",
+      "name": "Barbell Back Squat",
+      "tags": [
+        "Legs",
+        "Compound"
+      ],
+      "notes": "Brace firmly and use the depth you can control.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Quads"
+      ]
+    },
+    {
+      "id": "bc1a8212-4e46-4053-8518-577da5a0f963",
+      "name": "Leg Press",
+      "tags": [
+        "Legs",
+        "Compound"
+      ],
+      "notes": "Keep the hips against the pad and avoid locking the knees.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Quads"
+      ]
+    },
+    {
+      "id": "7be20477-e699-44a4-9397-805bbdc19aad",
+      "name": "Romanian Deadlift",
+      "tags": [
+        "Legs",
+        "Compound"
+      ],
+      "notes": "Push the hips back while keeping the weight close to the legs.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Hamstrings"
+      ]
+    },
+    {
+      "id": "8c4f6e88-fcba-4809-9621-c8b8705b6bec",
+      "name": "Seated Leg Curl",
+      "tags": [
+        "Legs",
+        "Isolation"
+      ],
+      "notes": "Pause briefly in the contracted position.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Hamstrings"
+      ]
+    },
+    {
+      "id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+      "name": "Barbell Bench Press",
+      "tags": [
+        "Push",
+        "Compound"
+      ],
+      "notes": "Keep shoulder blades retracted and use a controlled descent.",
+      "demo_url": "https://exrx.net/WeightExercises/PectoralSternal/BBBenchPress",
+      "muscles_targeted": [
+        "Chest"
+      ]
+    },
+    {
+      "id": "140a7006-4fb2-4e2e-8f3f-8036e30199ee",
+      "name": "Dumbbell Bench Press",
+      "tags": [
+        "Push",
+        "Compound"
+      ],
+      "notes": "Use a neutral grip if that feels better on the shoulders.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Chest"
+      ]
+    },
+    {
+      "id": "9d28751d-06cf-4037-aa88-99d8a435335a",
+      "name": "Standing Calf Raise",
+      "tags": [
+        "Legs",
+        "Isolation"
+      ],
+      "notes": "Use a full stretch and pause at the top.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Calves"
+      ]
+    },
+    {
+      "id": "466cb46f-8723-4345-a87a-4548f11027db",
+      "name": "Seated Calf Raise",
+      "tags": [
+        "Legs",
+        "Isolation"
+      ],
+      "notes": "Avoid bouncing at the bottom of each rep.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Calves"
+      ]
     }
   ]
 }
