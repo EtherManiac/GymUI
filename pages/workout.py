@@ -100,6 +100,27 @@ exercise_by_id = {
 }
 widget_nonce = st.session_state.workout_widget_nonce
 
+
+@st.dialog("Exercise details", width="small", position="center")
+def show_exercise_details(exercise_id: str) -> None:
+    """Show only the selected exercise's notes and optional external link."""
+
+    exercise = exercise_by_id[exercise_id]
+    st.subheader(exercise["name"])
+
+    notes = exercise.get("notes", "").strip()
+    exercise_url = exercise.get("demo_url", "").strip()
+    if notes:
+        st.markdown(f"**Notes:** {notes}")
+    if exercise_url:
+        st.link_button(
+            "Open exercise link",
+            exercise_url,
+            icon=":material/open_in_new:",
+        )
+    if not notes and not exercise_url:
+        st.caption("No notes or link have been added for this exercise.")
+
 # Every exercise uses the same full-width card. Superset membership is encoded
 # only in the card key so CSS can overlay bracket segments outside the cards;
 # there is no grouping wrapper to alter width, padding, or component layout.
@@ -199,11 +220,23 @@ st.markdown(
         font-size: 0.75rem;
         line-height: 1.25;
     }
-    /* Streamlit adds an anchor-link icon to Markdown headings. Exercise names
-       are labels, not page sections, so that icon should never be shown. */
+    /* Exercise names are labels, not page sections, so suppress the anchor
+       that Streamlit normally adds to Markdown headings. */
     div[class*="st-key-exercise_header_"] h3 a,
     div[class*="st-key-exercise_header_"] [data-testid="stHeaderActionElements"] {
         display: none !important;
+    }
+    /* Keep the accessible label while showing only the requested info icon. */
+    div[class*="st-key-details_"] button p {
+        display: none;
+    }
+    /* Streamlit's center dialog preset centers horizontally but aligns the
+       dialog to the top of its overlay. Center this details dialog on both
+       axes while retaining a small viewport-edge safety margin. */
+    div[data-testid="stDialog"] {
+        align-items: center !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
     }
     @media (max-width: 640px) {
         html,
@@ -281,7 +314,7 @@ st.markdown(
             flex: 1 1 auto !important;
         }
         div[class*="st-key-exercise_header_"] [data-testid="stColumn"]:nth-child(3) {
-            flex: 0 0 2.6rem !important;
+            flex: 0 0 5rem !important;
         }
         div[class*="st-key-exercise_header_"] [data-testid="stPopover"] button {
             min-height: 1.7rem;
@@ -356,8 +389,8 @@ def render_workout_row(
             st.session_state[done_key] = False
 
         with st.container(key=f"exercise_header_{safe_slot_id}"):
-            checkbox_column, name_column, swap_column = st.columns(
-                [0.35, 5.65, 1.3], vertical_alignment="center"
+            checkbox_column, name_column, action_column = st.columns(
+                [0.35, 5.2, 1.75], vertical_alignment="center"
             )
             completed = checkbox_column.checkbox(
                 "Done",
@@ -374,30 +407,41 @@ def render_workout_row(
             )
 
             has_alternates = len(allowed_ids) > 1
-            with swap_column.popover(
-                "Swap",
-                icon=":material/swap_horiz:",
-                disabled=not has_alternates,
-                help=(
-                    "Choose another exercise for this slot."
-                    if has_alternates
-                    else "No alternate exercises are configured for this slot."
-                ),
-                width="content",
-                key=f"swap_{widget_nonce}_{slot['id']}",
+            with action_column.container(
+                horizontal=True,
+                horizontal_alignment="right",
+                vertical_alignment="center",
+                gap="xsmall",
+                wrap=False,
             ):
-                st.caption("Choose an exercise")
-                for exercise_id in allowed_ids:
-                    is_current = exercise_id == selected_exercise_id
-                    if st.button(
-                        exercise_by_id[exercise_id]["name"],
-                        key=f"swap_option_{widget_nonce}_{slot['id']}_{exercise_id}",
-                        disabled=is_current,
-                        type="primary" if is_current else "secondary",
-                        width="stretch",
-                    ):
-                        row["selected_exercise_id"] = exercise_id
-                        st.rerun()
+                show_details = st.button(
+                    "Exercise information",
+                    key=f"details_{widget_nonce}_{slot['id']}",
+                    type="tertiary",
+                    icon=":material/info:",
+                )
+                if show_details:
+                    show_exercise_details(selected_exercise_id)
+
+                with st.popover(
+                    "Swap",
+                    icon=":material/swap_horiz:",
+                    disabled=not has_alternates,
+                    width="content",
+                    key=f"swap_{widget_nonce}_{slot['id']}",
+                ):
+                    st.caption("Choose an exercise")
+                    for exercise_id in allowed_ids:
+                        is_current = exercise_id == selected_exercise_id
+                        if st.button(
+                            exercise_by_id[exercise_id]["name"],
+                            key=f"swap_option_{widget_nonce}_{slot['id']}_{exercise_id}",
+                            disabled=is_current,
+                            type="primary" if is_current else "secondary",
+                            width="stretch",
+                        ):
+                            row["selected_exercise_id"] = exercise_id
+                            st.rerun()
 
         st.markdown(
             '<div class="workout-prescription">'
