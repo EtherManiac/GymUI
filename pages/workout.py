@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -178,6 +179,10 @@ st.markdown(
     div[class*="st-key-superset_member_"][class*="_label_giantset_"]::before {
         content: "Giant set";
     }
+    .workout-prescription {
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
     @media (max-width: 640px) {
         html,
         body,
@@ -196,7 +201,7 @@ st.markdown(
         div[class*="st-key-workout_card_"],
         div[class*="st-key-superset_member_"] {
             width: calc(100% - 5.5rem) !important;
-            margin-bottom: -0.35rem;
+            margin-bottom: -0.2rem;
         }
         div[class*="st-key-superset_member_"]::after {
             right: -1.35rem;
@@ -235,6 +240,44 @@ st.markdown(
             padding: 0.25rem 0.4rem;
             font-size: 0.78rem;
         }
+        /* Keep this specific row horizontal when Streamlit stacks other
+           columns on narrow screens. */
+        div[class*="st-key-exercise_header_"] [data-testid="stHorizontalBlock"] {
+            display: flex;
+            flex-wrap: nowrap !important;
+            align-items: center;
+            gap: 0.35rem !important;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stColumn"] {
+            width: auto !important;
+            min-width: 0 !important;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stColumn"]:nth-child(1) {
+            flex: 0 0 2rem !important;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stColumn"]:nth-child(2) {
+            flex: 1 1 auto !important;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stColumn"]:nth-child(3) {
+            flex: 0 0 4.35rem !important;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stPopover"] button {
+            min-height: 1.7rem;
+            padding: 0.1rem 0.25rem;
+            font-size: 0.7rem;
+        }
+        .workout-prescription {
+            margin: 0.15rem 0 0.45rem;
+            font-size: 0.8rem;
+            line-height: 1.35;
+        }
+        .workout-prescription__separator {
+            display: none;
+        }
+        .workout-prescription__weight {
+            display: block;
+            margin-top: 0.1rem;
+        }
     }
     </style>
     """,
@@ -272,61 +315,67 @@ def render_workout_row(
         card_key = f"superset_member_{position}{label_marker}_{safe_slot_id}"
 
     with st.container(border=True, key=card_key):
-        checkbox_column, details_column = st.columns([1, 6], vertical_alignment="center")
-        completed = checkbox_column.checkbox(
-            "Done",
-            value=row["completed"],
-            key=f"done_{widget_nonce}_{slot['id']}",
-            label_visibility="collapsed",
-        )
-        row["completed"] = completed
-
         selected_exercise_id = row["selected_exercise_id"]
-        name_column, swap_column = details_column.columns(
-            [5, 2], vertical_alignment="center"
-        )
-        exercise_name = exercise_by_id[selected_exercise_id]["name"]
-        name_column.markdown(
-            f"### {'~~' + exercise_name + '~~' if completed else exercise_name}"
-        )
+        with st.container(key=f"exercise_header_{safe_slot_id}"):
+            checkbox_column, name_column, swap_column = st.columns(
+                [1, 5, 1.5], vertical_alignment="center"
+            )
+            completed = checkbox_column.checkbox(
+                "Done",
+                value=row["completed"],
+                key=f"done_{widget_nonce}_{slot['id']}",
+                label_visibility="collapsed",
+            )
+            row["completed"] = completed
 
-        has_alternates = len(allowed_ids) > 1
-        with swap_column.popover(
-            "Swap",
-            icon=":material/swap_horiz:",
-            disabled=not has_alternates,
-            help=(
-                "Choose another exercise for this slot."
-                if has_alternates
-                else "No alternate exercises are configured for this slot."
-            ),
-            width="stretch",
-            key=f"swap_{widget_nonce}_{slot['id']}",
-        ):
-            st.caption("Choose an exercise")
-            for exercise_id in allowed_ids:
-                is_current = exercise_id == selected_exercise_id
-                if st.button(
-                    exercise_by_id[exercise_id]["name"],
-                    key=f"swap_option_{widget_nonce}_{slot['id']}_{exercise_id}",
-                    disabled=is_current,
-                    type="primary" if is_current else "secondary",
-                    width="stretch",
-                ):
-                    row["selected_exercise_id"] = exercise_id
-                    st.rerun()
+            exercise_name = exercise_by_id[selected_exercise_id]["name"]
+            name_column.markdown(
+                f"### {'~~' + exercise_name + '~~' if completed else exercise_name}"
+            )
+
+            has_alternates = len(allowed_ids) > 1
+            with swap_column.popover(
+                "Swap",
+                icon=":material/swap_horiz:",
+                disabled=not has_alternates,
+                help=(
+                    "Choose another exercise for this slot."
+                    if has_alternates
+                    else "No alternate exercises are configured for this slot."
+                ),
+                width="content",
+                key=f"swap_{widget_nonce}_{slot['id']}",
+            ):
+                st.caption("Choose an exercise")
+                for exercise_id in allowed_ids:
+                    is_current = exercise_id == selected_exercise_id
+                    if st.button(
+                        exercise_by_id[exercise_id]["name"],
+                        key=f"swap_option_{widget_nonce}_{slot['id']}_{exercise_id}",
+                        disabled=is_current,
+                        type="primary" if is_current else "secondary",
+                        width="stretch",
+                    ):
+                        row["selected_exercise_id"] = exercise_id
+                        st.rerun()
 
         exercise = exercise_by_id[row["selected_exercise_id"]]
         if completed:
-            details_column.caption("✅ Completed")
-        details_column.write(
-            f"**{slot['sets']} × {slot['reps']}** · Reference weight: **{slot['reference_weight']}**"
+            st.caption("✅ Completed")
+        st.markdown(
+            '<div class="workout-prescription">'
+            f"<strong>{escape(str(slot['sets']))} × {escape(str(slot['reps']))}</strong>"
+            '<span class="workout-prescription__separator"> · </span>'
+            '<span class="workout-prescription__weight">Reference weight: '
+            f"<strong>{escape(str(slot['reference_weight']))}</strong></span>"
+            "</div>",
+            unsafe_allow_html=True,
         )
         if exercise.get("notes"):
-            with details_column.expander("Notes"):
+            with st.expander("Notes"):
                 st.write(exercise["notes"])
         if exercise.get("demo_url"):
-            details_column.link_button("View demonstration", exercise["demo_url"])
+            st.link_button("View demonstration", exercise["demo_url"])
 
 
 for unit in group_slots_by_snapshot(snapshot):
