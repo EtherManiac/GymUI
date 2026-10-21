@@ -32,7 +32,6 @@ st.dataframe(
             "Muscles targeted": ", ".join(exercise["muscles_targeted"]),
             "Tags": ", ".join(exercise["tags"]),
             "Notes": exercise.get("notes", ""),
-            "Demo": exercise.get("demo_url", ""),
         }
         for exercise in exercises
     ],
@@ -76,9 +75,6 @@ with st.form(f"exercise_details_{selected_id}", clear_on_submit=is_new_exercise)
         help="Use these for additional labels such as Push, Compound, or equipment.",
     )
     edited_notes = st.text_area("Notes (optional)", value=selected.get("notes", ""))
-    edited_demo_url = st.text_input(
-        "Demonstration URL (optional)", value=selected.get("demo_url", "")
-    )
     save_submitted = st.form_submit_button(
         "Add exercise" if is_new_exercise else "Save changes", type="primary"
     )
@@ -99,7 +95,6 @@ if save_submitted:
                     "muscles_targeted": muscles_targeted,
                     "tags": tags,
                     "notes": edited_notes.strip(),
-                    "demo_url": edited_demo_url.strip(),
                 }
             )
         else:
@@ -114,7 +109,6 @@ if save_submitted:
                 muscles_targeted=muscles_targeted,
                 tags=tags,
                 notes=edited_notes.strip(),
-                demo_url=edited_demo_url.strip(),
             )
         try:
             save_data(updated_exercises, routine_document)

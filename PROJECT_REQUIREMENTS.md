@@ -20,7 +20,7 @@ PAGE 1: WORKOUT (DEFAULT PAGE)
 - Select the number of exercises to perform.
 - Show the chosen exercises in a clear, mobile-friendly checklist.
 - Each exercise row displays: exercise name, sets x reps, reference weight, completion checkbox, and an alternative-selection control when alternatives exist.
-- Show notes and demonstration links when provided, without cluttering the main view.
+- Provide a session-only optional field for the weight used on each workout exercise.
 - Show visually grouped supersets, keeping their exercise rows adjacent.
 - Allow optional shuffling of the selected exercises while preserving superset grouping.
 - Provide a way to restore the original order and reset the active workout.
@@ -31,7 +31,7 @@ PAGE 1: WORKOUT (DEFAULT PAGE)
 PAGE 2: EDIT EXERCISES
 - View the master exercise library.
 - Create, edit, and delete exercises.
-- Store: stable unique exercise ID, name, muscles targeted (one or more), optional tags, optional notes, and optional demonstration URL.
+- Store: stable unique exercise ID, name, muscles targeted (one or more), optional tags, and optional notes.
 - Allow tags to be added or edited easily.
 - Prevent or clearly handle deleting an exercise referenced by a routine.
 - The supplied exercise-editor mockup includes sets/reps and weight, but these should be configured in routine slots instead of in the master exercise library.

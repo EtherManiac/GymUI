@@ -56,7 +56,6 @@ An exercise contains:
 - `muscles_targeted`: one or more required muscle-group labels
 - `tags`: optional additional labels such as movement type or equipment
 - `notes`: optional technique or setup note
-- `demo_url`: optional demonstration link
 
 A routine contains a stable `id`, a `name`, and ordered `slots`. Each slot contains:
 

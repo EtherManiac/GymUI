@@ -87,6 +87,7 @@ def new_workout_snapshot(routine: dict[str, Any], requested_count: int) -> list[
             "slot": slot,
             "selected_exercise_id": slot["default_exercise_id"],
             "completed": False,
+            "weight_used": "",
             # Base position tracks the active original/shuffled order separately
             # from the temporary completed-at-bottom display order.
             "base_position": position,

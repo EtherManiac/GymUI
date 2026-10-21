@@ -43,6 +43,14 @@ class WorkoutLogicTests(unittest.TestCase):
         snapshot[0]["completed"] = True
         self.assertNotIn("completed", self.routine["slots"][0])
 
+    def test_weight_used_is_session_only_and_follows_its_exercise(self) -> None:
+        snapshot = new_workout_snapshot(self.routine, 4)
+        snapshot[0]["weight_used"] = "75 lb"
+        snapshot[0]["completed"] = True
+        move_completed_units_to_end(snapshot)
+        self.assertEqual(snapshot[-1]["weight_used"], "75 lb")
+        self.assertNotIn("weight_used", self.routine["slots"][0])
+
     def test_priority_is_independent_from_display_order(self) -> None:
         self.routine["slots"][0]["priority"] = 4
         self.routine["slots"][3]["priority"] = 1

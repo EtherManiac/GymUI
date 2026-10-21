@@ -180,8 +180,22 @@ st.markdown(
         content: "Giant set";
     }
     .workout-prescription {
+        margin: 0.15rem 0 0.45rem;
         line-height: 1.4;
         overflow-wrap: anywhere;
+    }
+    .workout-prescription__separator {
+        display: none;
+    }
+    .workout-prescription__weight {
+        display: block;
+        margin-top: 0.1rem;
+    }
+    /* Streamlit adds an anchor-link icon to Markdown headings. Exercise names
+       are labels, not page sections, so that icon should never be shown. */
+    div[class*="st-key-exercise_header_"] h3 a,
+    div[class*="st-key-exercise_header_"] [data-testid="stHeaderActionElements"] {
+        display: none !important;
     }
     @media (max-width: 640px) {
         html,
@@ -259,24 +273,24 @@ st.markdown(
             flex: 1 1 auto !important;
         }
         div[class*="st-key-exercise_header_"] [data-testid="stColumn"]:nth-child(3) {
-            flex: 0 0 4.35rem !important;
+            flex: 0 0 2.6rem !important;
         }
         div[class*="st-key-exercise_header_"] [data-testid="stPopover"] button {
             min-height: 1.7rem;
-            padding: 0.1rem 0.25rem;
+            padding: 0.1rem 0.15rem;
             font-size: 0.7rem;
+        }
+        div[class*="st-key-exercise_header_"] [data-testid="stPopover"] button p {
+            display: none;
+        }
+        div[class*="st-key-weight_used_"] input {
+            min-height: 2rem;
+            font-size: 0.8rem;
         }
         .workout-prescription {
             margin: 0.15rem 0 0.45rem;
             font-size: 0.8rem;
             line-height: 1.35;
-        }
-        .workout-prescription__separator {
-            display: none;
-        }
-        .workout-prescription__weight {
-            display: block;
-            margin-top: 0.1rem;
         }
     }
     </style>
@@ -318,7 +332,7 @@ def render_workout_row(
         selected_exercise_id = row["selected_exercise_id"]
         with st.container(key=f"exercise_header_{safe_slot_id}"):
             checkbox_column, name_column, swap_column = st.columns(
-                [1, 5, 1.5], vertical_alignment="center"
+                [0.35, 5.65, 1.3], vertical_alignment="center"
             )
             completed = checkbox_column.checkbox(
                 "Done",
@@ -359,7 +373,6 @@ def render_workout_row(
                         row["selected_exercise_id"] = exercise_id
                         st.rerun()
 
-        exercise = exercise_by_id[row["selected_exercise_id"]]
         if completed:
             st.caption("✅ Completed")
         st.markdown(
@@ -371,11 +384,13 @@ def render_workout_row(
             "</div>",
             unsafe_allow_html=True,
         )
-        if exercise.get("notes"):
-            with st.expander("Notes"):
-                st.write(exercise["notes"])
-        if exercise.get("demo_url"):
-            st.link_button("View demonstration", exercise["demo_url"])
+        row["weight_used"] = st.text_input(
+            "Weight used (optional)",
+            value=row.get("weight_used", ""),
+            placeholder="Weight used (optional)",
+            key=f"weight_used_{widget_nonce}_{slot['id']}",
+            label_visibility="collapsed",
+        )
 
 
 for unit in group_slots_by_snapshot(snapshot):
