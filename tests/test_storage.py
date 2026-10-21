@@ -12,6 +12,7 @@ from unittest.mock import patch
 from workout_app import storage
 from workout_app.workout_logic import new_workout_snapshot
 from workout_app.calendar_logic import empty_calendar_document
+from workout_app.split_logic import empty_split_document
 
 
 class ProfileStorageTests(unittest.TestCase):
@@ -112,13 +113,17 @@ class ProfileStorageTests(unittest.TestCase):
         self.assertEqual(storage.load_calendar("tyler"), calendar)
         self.assertEqual(storage.load_calendar("mia"), empty_calendar_document())
 
+        split = empty_split_document()
         raw_bundle = storage.data_bundle_json(
-            self.empty_exercises, self.empty_routines, calendar
+            self.empty_exercises, self.empty_routines, calendar, split
         ).encode("utf-8")
-        exercises, routines, restored_calendar = storage.parse_data_bundle(raw_bundle)
+        exercises, routines, restored_calendar, restored_split = (
+            storage.parse_data_bundle(raw_bundle)
+        )
         self.assertEqual(exercises, self.empty_exercises)
         self.assertEqual(routines, self.empty_routines)
         self.assertEqual(restored_calendar, calendar)
+        self.assertEqual(restored_split, split)
 
     def test_version_one_backup_restores_with_an_empty_calendar(self) -> None:
         raw_bundle = json.dumps(
@@ -129,9 +134,29 @@ class ProfileStorageTests(unittest.TestCase):
             }
         ).encode("utf-8")
 
-        _, _, calendar = storage.parse_data_bundle(raw_bundle)
+        _, _, calendar, split = storage.parse_data_bundle(raw_bundle)
 
         self.assertEqual(calendar, empty_calendar_document())
+        self.assertEqual(split, empty_split_document())
+
+    def test_split_is_profile_scoped(self) -> None:
+        routines = {
+            "schema_version": 1,
+            "routines": [
+                {"id": "push", "name": "Push", "slots": []},
+                {"id": "pull", "name": "Pull", "slots": []},
+            ],
+        }
+        split = {
+            "schema_version": 1,
+            "routine_ids": ["push", "pull"],
+            "current_index": 1,
+        }
+
+        storage.save_split("tyler", split, routines)
+
+        self.assertEqual(storage.load_split("tyler", routines), split)
+        self.assertEqual(storage.load_split("mia", routines), empty_split_document())
 
 
 if __name__ == "__main__":

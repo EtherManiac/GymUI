@@ -115,6 +115,434 @@
           ]
         }
       ]
+    },
+    {
+      "id": "07d7ff76-1bf7-4693-95c7-34dc0db09c42",
+      "name": "Push 1",
+      "slots": [
+        {
+          "id": "4b1aa310-ea74-4489-8d1d-9c1b120814fe",
+          "order": 1,
+          "priority": 1,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+          "alternative_exercise_ids": [
+            "140a7006-4fb2-4e2e-8f3f-8036e30199ee"
+          ],
+          "sets": "3",
+          "reps": "6-8",
+          "reference_weight": "135 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "f8534aed-c675-49a4-88ba-0d3eae5a57ba",
+          "order": 2,
+          "priority": 2,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "3c887978-7b5c-4ae7-bd01-540a6e9c20d9",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-10",
+          "reference_weight": "65 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "d99e329b-7554-4022-872b-50663f33628a",
+          "order": 3,
+          "priority": 3,
+          "required_tags": [
+            "Push",
+            "Isolation"
+          ],
+          "default_exercise_id": "5f603328-a933-4895-a23a-cc346b84b197",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "15 lb each",
+          "superset_group_id": "eefb2704-780e-4197-b1e2-5fdfabcef74b",
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "a46a9ddb-2b38-43b6-9d1c-60672bc34717",
+          "order": 4,
+          "priority": 3,
+          "required_tags": [
+            "Push"
+          ],
+          "default_exercise_id": "dba21705-9627-4174-b446-91a3f88151b0",
+          "alternative_exercise_ids": [
+            "7a673545-89e2-4c28-a192-5cc708012431"
+          ],
+          "sets": "3",
+          "reps": "10-12",
+          "reference_weight": "40 lb",
+          "superset_group_id": "eefb2704-780e-4197-b1e2-5fdfabcef74b",
+          "required_muscles": [
+            "Triceps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ce6b4bc6-6fd6-453a-921e-c8d8b5269198",
+      "name": "Legs",
+      "slots": [
+        {
+          "id": "871bf624-656a-478d-bb29-8f168c77f441",
+          "order": 1,
+          "priority": 1,
+          "required_tags": [
+            "Legs",
+            "Compound"
+          ],
+          "default_exercise_id": "9f6ad790-d89b-42d2-8da7-661bdf8562ff",
+          "alternative_exercise_ids": [
+            "bc1a8212-4e46-4053-8518-577da5a0f963"
+          ],
+          "sets": "3",
+          "reps": "6-10",
+          "reference_weight": "135 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Quads"
+          ]
+        },
+        {
+          "id": "7f2ddff0-18ce-428b-919e-11bf6a1ced9b",
+          "order": 2,
+          "priority": 2,
+          "required_tags": [
+            "Legs"
+          ],
+          "default_exercise_id": "7be20477-e699-44a4-9397-805bbdc19aad",
+          "alternative_exercise_ids": [
+            "8c4f6e88-fcba-4809-9621-c8b8705b6bec"
+          ],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "95 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Hamstrings"
+          ]
+        },
+        {
+          "id": "cfbf721c-41b3-4f35-8fba-77f9d4258d85",
+          "order": 3,
+          "priority": 3,
+          "required_tags": [],
+          "default_exercise_id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "e060f73e-e4e8-4502-811c-fca6d787d5fc",
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "2dc80e4c-d901-419a-8275-5297324c000f",
+          "order": 4,
+          "priority": 3,
+          "required_tags": [
+            "Compound"
+          ],
+          "default_exercise_id": "140a7006-4fb2-4e2e-8f3f-8036e30199ee",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "e060f73e-e4e8-4502-811c-fca6d787d5fc",
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "2a10fb4b-6400-4410-bce1-fdce70e6b77d",
+          "order": 5,
+          "priority": 4,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "9d28751d-06cf-4037-aa88-99d8a435335a",
+          "alternative_exercise_ids": [
+            "466cb46f-8723-4345-a87a-4548f11027db"
+          ],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "142aec70-a4ae-4ca2-ad33-93d664b3b173",
+          "required_muscles": [
+            "Calves"
+          ]
+        },
+        {
+          "id": "b031be1c-1bcd-4bb1-ae7d-b78db3fbe3aa",
+          "order": 6,
+          "priority": 4,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "8c4f6e88-fcba-4809-9621-c8b8705b6bec",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "10-15",
+          "reference_weight": "50 lb",
+          "superset_group_id": "142aec70-a4ae-4ca2-ad33-93d664b3b173",
+          "required_muscles": [
+            "Hamstrings"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acb9363c-b29a-4f26-98f0-af57bdcc62f5",
+      "name": "UI Demo",
+      "slots": [
+        {
+          "id": "cf8a9cd1-792e-47ee-9099-9e76ff6d5887",
+          "order": 1,
+          "priority": 1,
+          "required_tags": [
+            "Push",
+            "Isolation"
+          ],
+          "default_exercise_id": "5f603328-a933-4895-a23a-cc346b84b197",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "15 lb each",
+          "superset_group_id": "2d21ada3-9b8a-4bbd-9ce6-aec2ec65e72c",
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "5077c9df-2265-4337-8c2d-180a87a0a50a",
+          "order": 2,
+          "priority": 1,
+          "required_tags": [
+            "Push",
+            "Isolation"
+          ],
+          "default_exercise_id": "dba21705-9627-4174-b446-91a3f88151b0",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "10-12",
+          "reference_weight": "40 lb",
+          "superset_group_id": "2d21ada3-9b8a-4bbd-9ce6-aec2ec65e72c",
+          "required_muscles": [
+            "Triceps"
+          ]
+        },
+        {
+          "id": "70e89656-fecf-4eaa-a543-a99726943ab8",
+          "order": 3,
+          "priority": 2,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "e4188d8f-9c8f-4e1a-a74b-bbaeda7a9fe3",
+          "alternative_exercise_ids": [
+            "140a7006-4fb2-4e2e-8f3f-8036e30199ee"
+          ],
+          "sets": "3",
+          "reps": "6-8",
+          "reference_weight": "135 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Chest"
+          ]
+        },
+        {
+          "id": "19c720cc-5919-49a3-845c-29227b5fe9df",
+          "order": 4,
+          "priority": 3,
+          "required_tags": [
+            "Pull",
+            "Compound"
+          ],
+          "default_exercise_id": "1ff93b10-646f-4712-b1a0-4e10d2d788db",
+          "alternative_exercise_ids": [
+            "d6d98500-3714-4c06-8e6b-71bcdf98b459"
+          ],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "90 lb",
+          "superset_group_id": null,
+          "required_muscles": [
+            "Back"
+          ]
+        },
+        {
+          "id": "d4ef7fc5-79e5-42cc-846c-4dd2254d7524",
+          "order": 5,
+          "priority": 4,
+          "required_muscles": [
+            "Quads"
+          ],
+          "required_tags": [
+            "Legs",
+            "Compound"
+          ],
+          "default_exercise_id": "9f6ad790-d89b-42d2-8da7-661bdf8562ff",
+          "alternative_exercise_ids": [
+            "bc1a8212-4e46-4053-8518-577da5a0f963"
+          ],
+          "sets": "3",
+          "reps": "6-10",
+          "reference_weight": "135 lb",
+          "superset_group_id": null
+        },
+        {
+          "id": "0750c8b0-c405-493a-ba7a-7bcbf870260c",
+          "order": 6,
+          "priority": 5,
+          "required_tags": [
+            "Pull",
+            "Isolation"
+          ],
+          "default_exercise_id": "b5728178-c2ee-4643-964a-c2295b89d5ca",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "30 lb",
+          "superset_group_id": "c1956e2d-63ca-4375-8bc6-6185bd9ae4e1",
+          "required_muscles": [
+            "Rear delts"
+          ]
+        },
+        {
+          "id": "7e3d8ed0-37d7-435e-bbd5-8f403599dae5",
+          "order": 7,
+          "priority": 5,
+          "required_tags": [
+            "Pull",
+            "Isolation"
+          ],
+          "default_exercise_id": "cee0afa8-e2a7-4e45-9267-a0770bf0e7ae",
+          "alternative_exercise_ids": [
+            "3785b659-5a44-4fec-b54b-65d927e1f868"
+          ],
+          "sets": "3",
+          "reps": "10-12",
+          "reference_weight": "20 lb each",
+          "superset_group_id": "c1956e2d-63ca-4375-8bc6-6185bd9ae4e1",
+          "required_muscles": [
+            "Biceps"
+          ]
+        },
+        {
+          "id": "50552ffe-aa08-4504-930a-c9667306e774",
+          "order": 8,
+          "priority": 5,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "9d28751d-06cf-4037-aa88-99d8a435335a",
+          "alternative_exercise_ids": [
+            "466cb46f-8723-4345-a87a-4548f11027db"
+          ],
+          "sets": "3",
+          "reps": "12-15",
+          "reference_weight": "Bodyweight",
+          "superset_group_id": "c1956e2d-63ca-4375-8bc6-6185bd9ae4e1",
+          "required_muscles": [
+            "Calves"
+          ]
+        },
+        {
+          "id": "d75c5276-4fc5-4e9a-b600-cf3bb788b6bf",
+          "order": 9,
+          "priority": 6,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "3c887978-7b5c-4ae7-bd01-540a6e9c20d9",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-10",
+          "reference_weight": "65 lb",
+          "superset_group_id": "c71dd827-1946-4d47-b9cd-c036981d1b53",
+          "required_muscles": [
+            "Shoulders"
+          ]
+        },
+        {
+          "id": "dcb33c56-5273-46f9-b5c4-a126a115ec9a",
+          "order": 10,
+          "priority": 6,
+          "required_tags": [
+            "Pull",
+            "Compound"
+          ],
+          "default_exercise_id": "e7d363f7-36f3-4e2d-8c8e-01ad76a6feb4",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "90 lb",
+          "superset_group_id": "c71dd827-1946-4d47-b9cd-c036981d1b53",
+          "required_muscles": [
+            "Back"
+          ]
+        },
+        {
+          "id": "f3b35603-86a1-4d0e-8a0e-0a5172455473",
+          "order": 11,
+          "priority": 6,
+          "required_tags": [
+            "Legs",
+            "Isolation"
+          ],
+          "default_exercise_id": "8c4f6e88-fcba-4809-9621-c8b8705b6bec",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "10-15",
+          "reference_weight": "50 lb",
+          "superset_group_id": "c71dd827-1946-4d47-b9cd-c036981d1b53",
+          "required_muscles": [
+            "Hamstrings"
+          ]
+        },
+        {
+          "id": "988ffdd8-accf-4338-8a9b-274983ee28c1",
+          "order": 12,
+          "priority": 6,
+          "required_tags": [
+            "Push",
+            "Compound"
+          ],
+          "default_exercise_id": "7a673545-89e2-4c28-a192-5cc708012431",
+          "alternative_exercise_ids": [],
+          "sets": "3",
+          "reps": "8-12",
+          "reference_weight": "Assisted",
+          "superset_group_id": "c71dd827-1946-4d47-b9cd-c036981d1b53",
+          "required_muscles": [
+            "Triceps"
+          ]
+        }
+      ]
     }
   ]
 }

@@ -10,7 +10,14 @@ import streamlit as st
 
 from workout_app.profile_ui import require_active_user
 from workout_app.sharing import copy_routine_into_documents, missing_routine_exercises
-from workout_app.storage import DataLoadError, load_data, save_data
+from workout_app.split_logic import without_routine
+from workout_app.storage import (
+    DataLoadError,
+    load_data,
+    load_split,
+    save_data,
+    save_split,
+)
 from workout_app.ui_helpers import (
     all_muscles,
     all_tags,
@@ -196,7 +203,15 @@ if st.button("Delete routine", type="secondary"):
     updated["routines"] = [
         routine for routine in updated["routines"] if routine["id"] != selected_routine_id
     ]
-    if persist(updated):
+    try:
+        updated_split = without_routine(
+            load_split(active_user_id, routine_document), selected_routine_id
+        )
+        save_split(active_user_id, updated_split, updated)
+        save_data(active_user_id, exercise_document, updated)
+    except (DataLoadError, DataValidationError) as error:
+        show_save_error(error)
+    else:
         st.session_state.routine_editor_pending_selection = new_routine_option
         st.rerun()
 

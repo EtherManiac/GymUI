@@ -17,11 +17,13 @@ from uuid import uuid4
 
 from workout_app.calendar_logic import empty_calendar_document
 from workout_app.migrations import migrate_documents
+from workout_app.split_logic import empty_split_document
 from workout_app.users import user_name
 from workout_app.validation import (
     DataValidationError,
     validate_all,
     validate_calendar_document,
+    validate_split_document,
 )
 from workout_app.workout_logic import is_valid_weight_input, new_workout_snapshot
 
@@ -139,6 +141,36 @@ def save_calendar(user_id: str, calendar_document: dict[str, Any]) -> None:
 
     validate_calendar_document(calendar_document)
     _atomic_write_json(_calendar_path(user_id), calendar_document)
+
+
+def _split_path(user_id: str) -> Path:
+    return _user_directory(user_id) / "split.json"
+
+
+def load_split(
+    user_id: str, routine_document: dict[str, Any]
+) -> dict[str, Any]:
+    """Load a profile split, treating a missing file as an unconfigured split."""
+
+    path = _split_path(user_id)
+    if not path.exists():
+        return empty_split_document()
+    document = _read_json(path)
+    routine_ids = {routine["id"] for routine in routine_document["routines"]}
+    validate_split_document(document, routine_ids)
+    return document
+
+
+def save_split(
+    user_id: str,
+    split_document: dict[str, Any],
+    routine_document: dict[str, Any],
+) -> None:
+    """Validate and atomically persist one profile's repeating split."""
+
+    routine_ids = {routine["id"] for routine in routine_document["routines"]}
+    validate_split_document(split_document, routine_ids)
+    _atomic_write_json(_split_path(user_id), split_document)
 
 
 def _draft_path(user_id: str) -> Path:
@@ -269,21 +301,23 @@ def data_bundle_json(
     exercise_document: dict[str, Any],
     routine_document: dict[str, Any],
     calendar_document: dict[str, Any],
+    split_document: dict[str, Any],
 ) -> str:
     """Create a portable single-file backup for browser download."""
 
     bundle = {
-        "bundle_version": 2,
+        "bundle_version": 3,
         "exercises": deepcopy(exercise_document),
         "routines": deepcopy(routine_document),
         "calendar": deepcopy(calendar_document),
+        "split": deepcopy(split_document),
     }
     return json.dumps(bundle, indent=2, ensure_ascii=False) + "\n"
 
 
 def parse_data_bundle(
     raw_data: bytes,
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Decode and validate a user-uploaded backup without writing it first."""
 
     try:
@@ -295,7 +329,7 @@ def parse_data_bundle(
             f"The imported backup has malformed JSON at line {error.lineno}, column {error.colno}."
         ) from error
 
-    if not isinstance(bundle, dict) or bundle.get("bundle_version") not in {1, 2}:
+    if not isinstance(bundle, dict) or bundle.get("bundle_version") not in {1, 2, 3}:
         raise DataValidationError(["The uploaded file is not a supported workout-data backup."])
     exercise_document = bundle.get("exercises")
     routine_document = bundle.get("routines")
@@ -306,7 +340,10 @@ def parse_data_bundle(
     validate_all(exercise_document, routine_document)
     calendar_document = bundle.get("calendar", empty_calendar_document())
     validate_calendar_document(calendar_document)
-    return exercise_document, routine_document, calendar_document
+    split_document = bundle.get("split", empty_split_document())
+    routine_ids = {routine["id"] for routine in routine_document["routines"]}
+    validate_split_document(split_document, routine_ids)
+    return exercise_document, routine_document, calendar_document, split_document
 
 
 def exercise_reference_locations(routine_document: dict[str, Any], exercise_id: str) -> list[str]:

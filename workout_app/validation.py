@@ -300,3 +300,37 @@ def validate_calendar_document(document: Any) -> None:
 
     if errors:
         raise DataValidationError(errors)
+
+
+def validate_split_document(document: Any, routine_ids: set[str]) -> None:
+    """Validate an ordered repeating split and its next-workout position."""
+
+    errors: list[str] = []
+    if not isinstance(document, dict):
+        raise DataValidationError(["Workout split data must be a JSON object."])
+    if document.get("schema_version") != 1:
+        errors.append("Workout split data must use schema_version 1.")
+
+    saved_routine_ids = document.get("routine_ids")
+    if not isinstance(saved_routine_ids, list):
+        raise DataValidationError(
+            errors + ["The workout split 'routine_ids' field must be a list."]
+        )
+    for index, routine_id in enumerate(saved_routine_ids, start=1):
+        if not _is_non_empty_string(routine_id):
+            errors.append(f"Workout split slot #{index} needs a routine ID.")
+        elif routine_id not in routine_ids:
+            errors.append(
+                f"Workout split slot #{index} references missing routine '{routine_id}'."
+            )
+
+    current_index = document.get("current_index")
+    if not isinstance(current_index, int) or isinstance(current_index, bool):
+        errors.append("Workout split 'current_index' must be an integer.")
+    elif not saved_routine_ids and current_index != 0:
+        errors.append("An empty workout split must use current_index 0.")
+    elif saved_routine_ids and not 0 <= current_index < len(saved_routine_ids):
+        errors.append("Workout split 'current_index' is outside its routine list.")
+
+    if errors:
+        raise DataValidationError(errors)

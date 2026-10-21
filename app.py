@@ -4,7 +4,13 @@ import streamlit as st
 
 from workout_app.calendar_logic import local_today, scheduled_event_on_date
 from workout_app.profile_ui import render_user_selection, request_user_selection
-from workout_app.storage import DataLoadError, load_calendar, load_workout_draft
+from workout_app.split_logic import current_split_routine_id
+from workout_app.storage import (
+    DataLoadError,
+    load_calendar,
+    load_split,
+    load_workout_draft,
+)
 from workout_app.ui_helpers import load_data_or_stop
 from workout_app.users import user_name
 from workout_app.validation import DataValidationError
@@ -55,9 +61,14 @@ workout_page = st.Page(
 navigation = st.navigation(
     [
         workout_page,
-        st.Page("pages/calendar.py", title="Calendar", icon=":material/calendar_month:"),
         st.Page("pages/edit_exercises.py", title="Edit exercises", icon="📝"),
         st.Page("pages/edit_routines.py", title="Edit routines", icon="🧩"),
+        st.Page(
+            "pages/workout_split.py",
+            title="Workout split",
+            icon=":material/repeat:",
+        ),
+        st.Page("pages/calendar.py", title="Calendar", icon=":material/calendar_month:"),
     ]
 )
 
@@ -71,8 +82,8 @@ st.sidebar.button(
 if st.session_state.get("user_selection_required", False):
     st.rerun()
 
-# Resolve today's explicit schedule once per profile/day. A recoverable draft
-# keeps priority so opening the app never silently discards workout progress.
+# Resolve the startup workout once per profile/day. A recoverable draft keeps
+# priority, then today's calendar schedule, then the repeating workout split.
 exercise_document, routine_document = load_data_or_stop(active_user_id)
 today = local_today()
 schedule_marker = f"{active_user_id}:{today.isoformat()}"
@@ -89,16 +100,28 @@ if st.session_state.get("calendar_schedule_checked") != schedule_marker:
         else None
     )
     routine_ids = {routine["id"] for routine in routine_document["routines"]}
+    saved_draft = load_workout_draft(active_user_id, routine_document)
     if scheduled_event and scheduled_event["routine_id"] in routine_ids:
         st.session_state.todays_scheduled_routine_id = scheduled_event["routine_id"]
         st.session_state.calendar_scheduled_event_id = scheduled_event["id"]
-        if load_workout_draft(active_user_id, routine_document) is None:
+        if saved_draft is None:
             st.session_state.workout_routine_id = scheduled_event["routine_id"]
             st.session_state.pop("active_workout_identity", None)
         st.session_state.open_scheduled_workout_requested = True
     else:
         st.session_state.pop("todays_scheduled_routine_id", None)
         st.session_state.pop("calendar_scheduled_event_id", None)
+        try:
+            split_routine_id = current_split_routine_id(
+                load_split(active_user_id, routine_document)
+            )
+        except (DataLoadError, DataValidationError):
+            split_routine_id = None
+        if split_routine_id in routine_ids:
+            if saved_draft is None:
+                st.session_state.workout_routine_id = split_routine_id
+                st.session_state.pop("active_workout_identity", None)
+            st.session_state.open_scheduled_workout_requested = True
 
 if st.session_state.pop("open_scheduled_workout_requested", False):
     st.switch_page(workout_page)

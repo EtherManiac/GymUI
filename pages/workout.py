@@ -14,12 +14,15 @@ from st_keyup import st_keyup
 from workout_app.calendar_logic import local_today, log_completed_workout
 from workout_app.profile_ui import require_active_user
 from workout_app.reorder_component import workout_drag_reorder
+from workout_app.split_logic import advance_split, current_split_routine_id
 from workout_app.storage import (
     DataLoadError,
     delete_workout_draft,
     load_calendar,
+    load_split,
     load_workout_draft,
     save_calendar,
+    save_split,
     save_workout_draft,
 )
 from workout_app.ui_helpers import (
@@ -658,6 +661,7 @@ if st.button(
 ):
     try:
         calendar_document = load_calendar(active_user_id)
+        split_document = load_split(active_user_id, routine_document)
         has_matching_schedule = (
             st.session_state.get("todays_scheduled_routine_id")
             == selected_routine_id
@@ -673,7 +677,12 @@ if st.button(
             completed_at=datetime.now(timezone.utc).isoformat(),
             source="calendar" if has_matching_schedule else "workout",
         )
+        updated_split, did_advance_split = advance_split(
+            split_document, selected_routine_id
+        )
         save_calendar(active_user_id, updated_calendar)
+        if did_advance_split:
+            save_split(active_user_id, updated_split, routine_document)
         delete_workout_draft(active_user_id)
     except (DataLoadError, DataValidationError) as error:
         show_save_error(error)
@@ -688,13 +697,13 @@ if st.button(
         if has_matching_schedule:
             st.session_state.pop("todays_scheduled_routine_id", None)
             st.session_state.pop("calendar_scheduled_event_id", None)
-        else:
-            scheduled_routine_id = st.session_state.get(
-                "todays_scheduled_routine_id"
-            )
-            if scheduled_routine_id in routine_by_id:
-                st.session_state.workout_routine_id = scheduled_routine_id
-                st.session_state.open_scheduled_workout_requested = True
+        scheduled_routine_id = st.session_state.get("todays_scheduled_routine_id")
+        next_split_routine_id = current_split_routine_id(updated_split)
+        if scheduled_routine_id in routine_by_id:
+            st.session_state.workout_routine_id = scheduled_routine_id
+            st.session_state.open_scheduled_workout_requested = True
+        elif next_split_routine_id in routine_by_id:
+            st.session_state.workout_routine_id = next_split_routine_id
         st.rerun()
 
 # A compact motivational footer, kept below the workout controls and progress.

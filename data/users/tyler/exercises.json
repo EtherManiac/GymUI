@@ -117,6 +117,123 @@
       "muscles_targeted": [
         "Calves"
       ]
+    },
+    {
+      "id": "3c887978-7b5c-4ae7-bd01-540a6e9c20d9",
+      "name": "Standing Overhead Press",
+      "tags": [
+        "Push",
+        "Compound"
+      ],
+      "notes": "Brace before each rep and avoid leaning back.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Shoulders"
+      ]
+    },
+    {
+      "id": "5f603328-a933-4895-a23a-cc346b84b197",
+      "name": "Dumbbell Lateral Raise",
+      "tags": [
+        "Push",
+        "Isolation"
+      ],
+      "notes": "Lead with the elbows and stop near shoulder height.",
+      "demo_url": "https://en.wikipedia.org/wiki/Lateral_raise",
+      "muscles_targeted": [
+        "Shoulders"
+      ]
+    },
+    {
+      "id": "dba21705-9627-4174-b446-91a3f88151b0",
+      "name": "Cable Triceps Pushdown",
+      "tags": [
+        "Push",
+        "Isolation"
+      ],
+      "notes": "Keep the upper arms still throughout the movement.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Triceps"
+      ]
+    },
+    {
+      "id": "7a673545-89e2-4c28-a192-5cc708012431",
+      "name": "Assisted Dip",
+      "tags": [
+        "Push",
+        "Compound"
+      ],
+      "notes": "Choose assistance that allows smooth, controlled repetitions.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Triceps"
+      ]
+    },
+    {
+      "id": "1ff93b10-646f-4712-b1a0-4e10d2d788db",
+      "name": "Lat Pulldown",
+      "tags": [
+        "Pull",
+        "Compound"
+      ],
+      "notes": "Pull the elbows toward the ribs without swinging.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Back"
+      ]
+    },
+    {
+      "id": "d6d98500-3714-4c06-8e6b-71bcdf98b459",
+      "name": "Assisted Pull-up",
+      "tags": [
+        "Pull",
+        "Compound"
+      ],
+      "notes": "Begin each rep from a controlled hang.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Back"
+      ]
+    },
+    {
+      "id": "cee0afa8-e2a7-4e45-9267-a0770bf0e7ae",
+      "name": "Dumbbell Curl",
+      "tags": [
+        "Pull",
+        "Isolation"
+      ],
+      "notes": "Avoid using momentum from the hips.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Biceps"
+      ]
+    },
+    {
+      "id": "3785b659-5a44-4fec-b54b-65d927e1f868",
+      "name": "Hammer Curl",
+      "tags": [
+        "Pull",
+        "Isolation"
+      ],
+      "notes": "Keep a neutral grip and control the lowering phase.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Biceps"
+      ]
+    },
+    {
+      "id": "e7d363f7-36f3-4e2d-8c8e-01ad76a6feb4",
+      "name": "Seated Cable Row",
+      "tags": [
+        "Pull",
+        "Compound"
+      ],
+      "notes": "Keep the torso quiet and finish with the elbows behind you.",
+      "demo_url": "",
+      "muscles_targeted": [
+        "Back"
+      ]
     }
   ]
 }

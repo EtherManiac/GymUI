@@ -47,6 +47,15 @@ class CalendarUiTests(unittest.TestCase):
             created_at="2026-10-20T12:00:00+00:00",
         )
         storage.save_calendar("dev", calendar)
+        storage.save_split(
+            "dev",
+            {
+                "schema_version": 1,
+                "routine_ids": ["routine-pull-1"],
+                "current_index": 0,
+            },
+            routine_document,
+        )
 
         app = AppTest.from_file(
             Path(__file__).resolve().parent.parent / "app.py",
@@ -134,6 +143,35 @@ class CalendarUiTests(unittest.TestCase):
         self.assertEqual(
             [event["id"] for event in remaining_events], ["scheduled-today"]
         )
+
+    def test_split_routine_opens_when_no_calendar_workout_is_scheduled(self) -> None:
+        _, routine_document = storage.load_data("dev")
+        split = {
+            "schema_version": 1,
+            "routine_ids": ["routine-push-1", "routine-pull-1"],
+            "current_index": 0,
+        }
+        storage.save_split("dev", split, routine_document)
+
+        app = AppTest.from_file(
+            Path(__file__).resolve().parent.parent / "app.py",
+            default_timeout=10,
+        )
+        app.session_state["active_user_id"] = "dev"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertEqual(
+            next(
+                selectbox
+                for selectbox in app.selectbox
+                if selectbox.label == "Select workout"
+            ).value,
+            "routine-push-1",
+        )
+
+        app.switch_page("pages/workout_split.py").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.title[0].value, "Workout split")
 
 
 if __name__ == "__main__":

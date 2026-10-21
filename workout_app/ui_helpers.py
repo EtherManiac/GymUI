@@ -11,9 +11,11 @@ from workout_app.storage import (
     data_bundle_json,
     load_calendar,
     load_data,
+    load_split,
     parse_data_bundle,
     save_calendar,
     save_data,
+    save_split,
 )
 from workout_app.validation import DataValidationError
 
@@ -44,7 +46,7 @@ def render_data_portability(
 ) -> None:
     """Render backup import/export controls in the sidebar.
 
-    Import is deliberately explicit because it replaces both local JSON files.
+    Import is deliberately explicit because it replaces all profile data.
     """
 
     with st.sidebar.expander("Data backup", expanded=False):
@@ -53,8 +55,11 @@ def render_data_portability(
         )
         try:
             calendar_document = load_calendar(user_id)
+            split_document = load_split(user_id, routine_document)
         except (DataLoadError, DataValidationError) as error:
-            st.error("The calendar must be repaired or replaced before downloading a backup.")
+            st.error(
+                "The calendar and workout split must be valid before downloading a backup."
+            )
             st.code(str(error))
         else:
             st.download_button(
@@ -63,6 +68,7 @@ def render_data_portability(
                     exercise_document,
                     routine_document,
                     calendar_document,
+                    split_document,
                 ),
                 file_name=f"workout_planner_{user_id}_backup.json",
                 mime="application/json",
@@ -77,11 +83,15 @@ def render_data_portability(
             width="stretch",
         ):
             try:
-                imported_exercises, imported_routines, imported_calendar = (
-                    parse_data_bundle(uploaded_backup.getvalue())
-                )
+                (
+                    imported_exercises,
+                    imported_routines,
+                    imported_calendar,
+                    imported_split,
+                ) = parse_data_bundle(uploaded_backup.getvalue())
                 save_data(user_id, imported_exercises, imported_routines)
                 save_calendar(user_id, imported_calendar)
+                save_split(user_id, imported_split, imported_routines)
             except (DataLoadError, DataValidationError) as error:
                 show_save_error(error)
             else:
